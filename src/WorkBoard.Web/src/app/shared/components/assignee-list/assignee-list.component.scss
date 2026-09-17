@@ -1,0 +1,13 @@
+.assignees {
+  display: inline-flex;
+}
+
+.avatar + .avatar {
+  margin-left: -6px;
+  border: 2px solid var(--surface);
+}
+
+.more {
+  background: var(--surface-hover);
+  color: var(--text-muted);
+}

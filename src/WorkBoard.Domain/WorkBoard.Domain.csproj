@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The domain is deliberately dependency-free: no EF Core, no ASP.NET Core, no DI container.
+    WorkBoard.ArchitectureTests enforces this.
+  -->
+
+</Project>

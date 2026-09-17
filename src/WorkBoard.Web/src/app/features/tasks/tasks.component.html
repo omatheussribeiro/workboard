@@ -1,0 +1,295 @@
+<div class="page">
+  <wb-page-header
+    title="Tasks"
+    subtitle="Filtered on the server, so the list stays fast as the workspace grows."
+  >
+    <button type="button" class="btn btn-primary" (click)="toggleCreateForm()">
+      {{ showCreateForm() ? 'Cancel' : 'New task' }}
+    </button>
+  </wb-page-header>
+
+  @if (showCreateForm()) {
+    <form class="card card-padded create-form" (ngSubmit)="createTask()" aria-label="Create task">
+      @if (projects().length === 0) {
+        <div class="create-empty">
+          <p class="muted">Create a project before adding your first task.</p>
+          <a routerLink="/projects" class="btn btn-secondary btn-sm">Go to projects</a>
+        </div>
+      } @else {
+        <div class="create-grid">
+          <div class="field">
+            <label for="new-task-project">Project</label>
+            <select
+              id="new-task-project"
+              class="select"
+              [ngModel]="newTaskProjectId()"
+              (ngModelChange)="selectCreateProject($event)"
+              name="newTaskProject"
+              required
+            >
+              <option value="" disabled>Select a project</option>
+              @for (project of projects(); track project.id) {
+                <option [value]="project.id" [disabled]="!project.defaultBoardId">
+                  {{ project.key }} — {{ project.name }}
+                </option>
+              }
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="new-task-column">Column</label>
+            <select
+              id="new-task-column"
+              class="select"
+              [ngModel]="newTaskColumnId()"
+              (ngModelChange)="newTaskColumnId.set($event)"
+              name="newTaskColumn"
+              [disabled]="loadingColumns() || createColumns().length === 0"
+              required
+            >
+              <option value="" disabled>
+                {{ loadingColumns() ? 'Loading columns…' : 'Select a column' }}
+              </option>
+              @for (column of createColumns(); track column.id) {
+                <option [value]="column.id">{{ column.name }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="new-task-priority">Priority</label>
+            <select
+              id="new-task-priority"
+              class="select"
+              [ngModel]="newTaskPriority()"
+              (ngModelChange)="newTaskPriority.set($event)"
+              name="newTaskPriority"
+            >
+              <option value="Low">Low</option>
+              <option value="Medium">Medium</option>
+              <option value="High">High</option>
+              <option value="Critical">Critical</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="new-task-due">Due date</label>
+            <input
+              id="new-task-due"
+              class="input"
+              type="datetime-local"
+              [ngModel]="newTaskDueAt()"
+              (ngModelChange)="newTaskDueAt.set($event)"
+              name="newTaskDue"
+            />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="new-task-title">Title</label>
+          <input
+            id="new-task-title"
+            class="input"
+            maxlength="200"
+            placeholder="What needs to be done?"
+            [ngModel]="newTaskTitle()"
+            (ngModelChange)="newTaskTitle.set($event)"
+            name="newTaskTitle"
+            required
+          />
+        </div>
+
+        <div class="field">
+          <label for="new-task-description">Description</label>
+          <textarea
+            id="new-task-description"
+            class="textarea"
+            maxlength="10000"
+            [ngModel]="newTaskDescription()"
+            (ngModelChange)="newTaskDescription.set($event)"
+            name="newTaskDescription"
+          ></textarea>
+        </div>
+
+        <div class="create-actions">
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="!newTaskTitle().trim() || !newTaskProjectId() || !newTaskColumnId() || creating()"
+          >
+            {{ creating() ? 'Creating…' : 'Create task' }}
+          </button>
+          <button type="button" class="btn btn-ghost" (click)="toggleCreateForm()">Cancel</button>
+        </div>
+      }
+    </form>
+  }
+
+  <section class="card card-padded filters" aria-label="Filters">
+    <div class="filter-grid">
+      <div class="field">
+        <label for="f-search">Search</label>
+        <input
+          id="f-search"
+          class="input"
+          type="search"
+          placeholder="Title or description"
+          [ngModel]="search()"
+          (ngModelChange)="onSearchInput($event)"
+          name="search"
+        />
+      </div>
+
+      <div class="field">
+        <label for="f-project">Project</label>
+        <select
+          id="f-project"
+          class="select"
+          [ngModel]="filterProjectId()"
+          (ngModelChange)="filterProjectId.set($event); applyFilters()"
+          name="project"
+        >
+          <option value="">All</option>
+          @for (project of projects(); track project.id) {
+            <option [value]="project.id">{{ project.key }} — {{ project.name }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="f-status">Status</label>
+        <select
+          id="f-status"
+          class="select"
+          [ngModel]="filterCategory()"
+          (ngModelChange)="filterCategory.set($event); applyFilters()"
+          name="status"
+        >
+          <option value="">Any</option>
+          <option value="Todo">To do</option>
+          <option value="InProgress">In progress</option>
+          <option value="Done">Done</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="f-priority">Priority</label>
+        <select
+          id="f-priority"
+          class="select"
+          [ngModel]="filterPriority()"
+          (ngModelChange)="filterPriority.set($event); applyFilters()"
+          name="priority"
+        >
+          <option value="">Any</option>
+          <option value="Low">Low</option>
+          <option value="Medium">Medium</option>
+          <option value="High">High</option>
+          <option value="Critical">Critical</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="f-label">Label</label>
+        <select
+          id="f-label"
+          class="select"
+          [ngModel]="filterLabelId()"
+          (ngModelChange)="filterLabelId.set($event); applyFilters()"
+          name="label"
+        >
+          <option value="">Any</option>
+          @for (label of labels(); track label.id) {
+            <option [value]="label.id">{{ label.name }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="f-sort">Sort</label>
+        <select
+          id="f-sort"
+          class="select"
+          [ngModel]="sort()"
+          (ngModelChange)="sort.set($event); applyFilters()"
+          name="sort"
+        >
+          <option value="Newest">Newest first</option>
+          <option value="Oldest">Oldest first</option>
+          <option value="DueDate">Due date</option>
+          <option value="Priority">Priority</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="filter-actions">
+      <label class="checkbox">
+        <input
+          type="checkbox"
+          [ngModel]="filterOverdue()"
+          (ngModelChange)="filterOverdue.set($event); applyFilters()"
+          name="overdue"
+        />
+        Overdue only
+      </label>
+
+      @if (hasFilters()) {
+        <button type="button" class="btn btn-ghost btn-sm" (click)="clearFilters()">Clear filters</button>
+      }
+    </div>
+  </section>
+
+  @if (loading()) {
+    <wb-loading what="tasks" />
+  } @else if (result(); as page) {
+    @if (page.items.length === 0) {
+      <wb-empty
+        title="No matching tasks"
+        [message]="hasFilters() ? 'Try relaxing the filters.' : 'Create your first task to see it here.'"
+      >
+        @if (!hasFilters()) {
+          <button type="button" class="btn btn-primary" (click)="toggleCreateForm()">Create task</button>
+        }
+      </wb-empty>
+    } @else {
+      <div class="card task-table" role="table">
+        @for (task of page.items; track task.id) {
+          <a class="task-row" role="row" [routerLink]="['/tasks', task.id]">
+            <span class="mono key">{{ task.key }}</span>
+            <span class="title">{{ task.title }}</span>
+            <span class="chip column-name">{{ task.columnName }}</span>
+            <wb-priority [priority]="task.priority" />
+            @if (task.dueAtUtc) {
+              <span class="chip due" [class.overdue]="task.isOverdue">
+                {{ task.dueAtUtc | date: 'MMM d' }}
+              </span>
+            }
+            <wb-assignees [assignees]="task.assignees" />
+          </a>
+        }
+      </div>
+
+      <nav class="pager" aria-label="Pagination">
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm"
+          [disabled]="page.page <= 1"
+          (click)="goToPage(page.page - 1)"
+        >
+          Previous
+        </button>
+        <span class="subtle">
+          Page {{ page.page }} of {{ page.totalPages }} · {{ page.totalCount }} tasks
+        </span>
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm"
+          [disabled]="!page.hasNextPage"
+          (click)="goToPage(page.page + 1)"
+        >
+          Next
+        </button>
+      </nav>
+    }
+  }
+</div>

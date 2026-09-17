@@ -1,0 +1,206 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.board-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 1.75rem 1.75rem 0;
+}
+
+/* The board scrolls horizontally as a whole, and each column scrolls vertically on its own. The
+   alternative — one page scrollbar — makes a wide board unusable, because reaching the last column
+   means scrolling past every card in the first. */
+.board {
+  display: flex;
+  gap: 1rem;
+  flex: 1;
+  min-height: 0;
+  padding-bottom: 1.25rem;
+  overflow-x: auto;
+  align-items: flex-start;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 320px;
+  max-height: 100%;
+  background: color-mix(in srgb, var(--surface-raised) 88%, var(--accent-soft));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.column.over-wip {
+  border-color: var(--warning);
+}
+
+.column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.85rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.column-header h2 {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.count {
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.count.warn {
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-weight: 600;
+}
+
+.limit {
+  opacity: 0.7;
+}
+
+.wip-warning {
+  margin: 0;
+  padding: 0.4rem 0.8rem;
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.7rem;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 60px;
+}
+
+.card-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  cursor: grab;
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.card-item:active {
+  cursor: grabbing;
+}
+
+.card-item:hover {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  box-shadow: var(--shadow);
+  transform: translateY(-1px);
+}
+
+.card-placeholder {
+  min-height: 62px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+}
+
+.card-title {
+  color: var(--text);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.card-title:hover {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.key {
+  color: var(--text-subtle);
+  font-size: 0.6875rem;
+}
+
+.due {
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+}
+
+.due.overdue {
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.subtasks,
+.comments {
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+}
+
+.column-empty {
+  margin: 0;
+  padding: 1rem 0.5rem;
+  text-align: center;
+}
+
+.composer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.6rem;
+  border-top: 1px solid var(--border);
+}
+
+.composer-actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.composer-actions .select {
+  flex: 1;
+}
+
+@media (max-width: 700px) {
+  .board-page {
+    padding: 1.25rem 1rem 0;
+  }
+
+  .column {
+    flex-basis: 85vw;
+  }
+}

@@ -1,0 +1,10 @@
+<div class="empty">
+  <span class="empty-illustration" aria-hidden="true"><span></span></span>
+  <h3>{{ title() }}</h3>
+  @if (message()) {
+    <p class="muted">{{ message() }}</p>
+  }
+
+  <!-- The action that fills the emptiness, when the caller has one. -->
+  <ng-content />
+</div>

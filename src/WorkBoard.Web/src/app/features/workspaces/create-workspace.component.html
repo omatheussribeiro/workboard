@@ -1,0 +1,39 @@
+<div class="page narrow">
+  <wb-page-header
+    title="New workspace"
+    subtitle="A workspace is the tenant boundary: its projects, tasks and members are invisible to every other workspace."
+  />
+
+  <form class="card card-padded" [formGroup]="form" (ngSubmit)="create()">
+    <div class="field">
+      <label for="name">Name</label>
+      <input
+        id="name"
+        class="input"
+        formControlName="name"
+        placeholder="Acme Product"
+        (input)="suggestSlug()"
+      />
+    </div>
+
+    <div class="field">
+      <label for="slug">Slug</label>
+      <input id="slug" class="input mono" formControlName="slug" placeholder="acme-product" />
+      <span class="subtle">
+        Lowercase letters, digits and hyphens. Unique across WorkBoard, because it appears in URLs.
+      </span>
+      @if (slugInvalid()) {
+        <span class="field-error">Use lowercase letters, digits and single hyphens.</span>
+      }
+    </div>
+
+    <div class="field">
+      <label for="description">Description</label>
+      <textarea id="description" class="textarea" formControlName="description"></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary" [disabled]="form.invalid || busy()">
+      {{ busy() ? 'Creating…' : 'Create workspace' }}
+    </button>
+  </form>
+</div>

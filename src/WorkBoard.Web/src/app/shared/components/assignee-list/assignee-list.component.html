@@ -1,0 +1,8 @@
+<span class="assignees">
+  @for (assignee of visible(); track assignee.userId) {
+    <span class="avatar" [title]="assignee.displayName">{{ initials(assignee.displayName) }}</span>
+  }
+  @if (overflow() > 0) {
+    <span class="avatar more" [title]="overflow() + ' more'">+{{ overflow() }}</span>
+  }
+</span>

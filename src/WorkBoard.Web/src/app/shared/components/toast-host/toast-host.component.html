@@ -1,0 +1,13 @@
+<div class="toasts" role="status" aria-live="polite">
+  @for (toast of toasts.toasts(); track toast.id) {
+    <div class="toast" [class]="toast.kind">
+      <div class="body">
+        <span>{{ toast.message }}</span>
+        @if (toast.correlationId) {
+          <span class="mono correlation">{{ toast.correlationId }}</span>
+        }
+      </div>
+      <button type="button" class="close" (click)="toasts.dismiss(toast.id)" aria-label="Dismiss">×</button>
+    </div>
+  }
+</div>

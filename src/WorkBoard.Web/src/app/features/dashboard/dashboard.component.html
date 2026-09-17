@@ -1,0 +1,136 @@
+<div class="page">
+  @if (loading()) {
+    <wb-loading what="the dashboard" />
+  } @else if (!workspaces.currentId()) {
+    <section class="card card-padded welcome">
+      <span class="eyebrow">Get started</span>
+      <h1>Welcome to WorkBoard</h1>
+      <p class="muted">
+        Create a workspace to bring your projects, boards, tasks and collaborators together.
+      </p>
+      <div>
+        <a routerLink="/workspaces/new" class="btn btn-primary">Create a workspace</a>
+      </div>
+    </section>
+  } @else if (data(); as view) {
+    <wb-page-header title="Dashboard" subtitle="Everything in this workspace, at a glance." />
+
+    <section class="stats" aria-label="Totals">
+      <wb-metric-card [value]="view.totals.projects" label="Projects" symbol="P" tone="accent" />
+      <wb-metric-card [value]="view.totals.tasks" label="All tasks" symbol="T" />
+      <wb-metric-card [value]="view.totals.openTasks" label="Open tasks" symbol="O" tone="accent" />
+      <wb-metric-card
+        [value]="view.totals.overdueTasks"
+        label="Overdue"
+        symbol="!"
+        [tone]="view.totals.overdueTasks > 0 ? 'danger' : 'neutral'"
+      />
+      <wb-metric-card [value]="view.totals.members" label="Members" symbol="M" tone="success" />
+    </section>
+
+    <div class="grid">
+      <section class="card card-padded">
+        <h2>Status</h2>
+        <!-- A stacked bar rather than a pie: three parts of one whole, compared by length, which the
+             eye reads far more accurately than angle. -->
+        <div class="status-bar" role="img" aria-label="Tasks by status">
+          @for (slice of view.byStatus; track slice.category) {
+            @if (slice.count > 0) {
+              <span
+                class="status-segment"
+                [attr.data-category]="slice.category"
+                [style.flex]="slice.count"
+                [title]="slice.category + ': ' + slice.count"
+              ></span>
+            }
+          }
+        </div>
+        <ul class="legend">
+          <li>
+            <span class="swatch todo"></span> To do <strong>{{ statusCount('Todo') }}</strong>
+          </li>
+          <li>
+            <span class="swatch in-progress"></span> In progress
+            <strong>{{ statusCount('InProgress') }}</strong>
+          </li>
+          <li>
+            <span class="swatch done"></span> Done <strong>{{ statusCount('Done') }}</strong>
+          </li>
+        </ul>
+      </section>
+
+      <section class="card card-padded">
+        <h2>Completed in the last 14 days</h2>
+        <div class="throughput" role="img" aria-label="Tasks completed per day">
+          @for (point of view.throughput; track point.date) {
+            <span
+              class="bar"
+              [style.height]="barHeight(point.completed)"
+              [title]="point.date + ': ' + point.completed"
+            ></span>
+          }
+        </div>
+        <p class="subtle">Peak {{ peakThroughput() }} in a day.</p>
+      </section>
+
+      <section class="card card-padded projects">
+        <h2>Projects</h2>
+        @if (view.projects.length === 0) {
+          <p class="muted">No projects yet.</p>
+        } @else {
+          <ul class="project-list">
+            @for (project of view.projects; track project.projectId) {
+              <li>
+                <div class="spread">
+                  <a [routerLink]="['/projects']">
+                    <span class="mono key">{{ project.key }}</span>
+                    {{ project.name }}
+                  </a>
+                  <span class="subtle">{{ project.done }}/{{ project.total }}</span>
+                </div>
+                <div
+                  class="progress"
+                  role="progressbar"
+                  [attr.aria-valuenow]="percentDone(project.total, project.done)"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                >
+                  <span [style.width.%]="percentDone(project.total, project.done)"></span>
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+
+      <section class="card card-padded my-tasks">
+        <h2>Assigned to you</h2>
+        @if (view.myOpenTasks.length === 0) {
+          <wb-empty title="Nothing on your plate" message="Tasks assigned to you will appear here." />
+        } @else {
+          <ul class="task-list">
+            @for (task of view.myOpenTasks; track task.id) {
+              <li>
+                <a [routerLink]="['/tasks', task.id]" class="task-link">
+                  <span class="mono key">{{ task.key }}</span>
+                  <span class="task-title">{{ task.title }}</span>
+                </a>
+                <div class="row">
+                  <wb-priority [priority]="task.priority" />
+                  <span class="chip column-name">{{ task.columnName }}</span>
+                  @if (task.dueAtUtc) {
+                    <span class="chip due" [class.overdue]="task.isOverdue">
+                      {{ task.dueAtUtc | date: 'MMM d' }}
+                    </span>
+                  }
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    </div>
+  } @else {
+    <wb-empty title="No data" message="The dashboard could not be loaded." />
+  }
+</div>

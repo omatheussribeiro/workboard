@@ -1,0 +1,203 @@
+name: CI
+
+# Runs on every push to main and on every pull request targeting it.
+#
+# The pull_request trigger is what branch protection enforces: the required status check is "the CI
+# run for this PR", so a branch cannot merge until this file passes against the merge result.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancels a superseded run on the same branch or PR. Without this, pushing three times in a minute
+# leaves three full runs competing for runners to produce two results nobody will read.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Read-only by default. A CI job has no reason to write to the repository, and the default token
+# permissions are broader than that.
+permissions:
+  contents: read
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  NODE_VERSION: '24.x'
+  DOTNET_NOLOGO: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  # Opting out keeps a first-party telemetry call out of every job.
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  # ===============================================================================================
+  # Backend: build, then the three test projects.
+  # ===============================================================================================
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          # Caches the NuGet package directory keyed on the lock/props files. Central package
+          # management means one file changes when a version does, so the key is stable.
+          cache: true
+          cache-dependency-path: |
+            **/packages.lock.json
+            Directory.Packages.props
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        # --no-restore because the previous step did it. TreatWarningsAsErrors is set in
+        # Directory.Build.props, so a warning fails the build here rather than accumulating.
+        run: dotnet build --configuration Release --no-restore
+
+      # One step per layer, matching the test projects. Separate steps rather than one
+      # `dotnet test` over the solution: a red X against "Domain tests" says which layer broke
+      # before anyone opens the log.
+      - name: Domain tests
+        run: >
+          dotnet test tests/WorkBoard.Domain.Tests
+          --configuration Release
+          --no-build
+          --logger "trx;LogFileName=domain.trx"
+          --results-directory artifacts/test-results
+          --collect:"XPlat Code Coverage"
+
+      - name: Application tests
+        run: >
+          dotnet test tests/WorkBoard.Application.Tests
+          --configuration Release
+          --no-build
+          --logger "trx;LogFileName=application.trx"
+          --results-directory artifacts/test-results
+          --collect:"XPlat Code Coverage"
+
+      - name: Infrastructure tests
+        run: >
+          dotnet test tests/WorkBoard.Infrastructure.Tests
+          --configuration Release
+          --no-build
+          --logger "trx;LogFileName=infrastructure.trx"
+          --results-directory artifacts/test-results
+          --collect:"XPlat Code Coverage"
+
+      - name: Architecture tests
+        run: >
+          dotnet test tests/WorkBoard.ArchitectureTests
+          --configuration Release
+          --no-build
+          --logger "trx;LogFileName=architecture.trx"
+          --results-directory artifacts/test-results
+
+      - name: Integration tests
+        # No service container and no connection string: the suite starts SQL Server through
+        # Testcontainers, which uses the Docker daemon the runner already provides. That keeps the
+        # test's dependency declared in code rather than split between code and this file.
+        run: >
+          dotnet test tests/WorkBoard.IntegrationTests
+          --configuration Release
+          --no-build
+          --logger "trx;LogFileName=integration.trx"
+          --results-directory artifacts/test-results
+
+      - name: Upload test results
+        # always(), so a failing run still uploads the results that explain why. The default would
+        # skip this step precisely when it is most useful.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results
+          path: artifacts/test-results
+          retention-days: 7
+
+  # ===============================================================================================
+  # Frontend: lint, test, build.
+  # ===============================================================================================
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: src/WorkBoard.Web
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: src/WorkBoard.Web/package-lock.json
+
+      - name: Install
+        # npm ci, never npm install: it installs exactly what the lock file pins and fails if the
+        # manifest and lock have drifted. npm install would quietly update the lock inside CI.
+        run: npm ci --no-audit --no-fund
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        # --watch=false, or the runner hangs until the job times out.
+        run: npm run test:ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: src/WorkBoard.Web/dist
+          retention-days: 7
+
+  # ===============================================================================================
+  # Container images: proves the Dockerfiles build, without pushing anything.
+  # ===============================================================================================
+  docker:
+    name: Container images
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Only after the code passes. Building an image from code that does not compile wastes minutes
+    # to tell us something the earlier jobs already said.
+    needs: [backend, frontend]
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build the API image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/api.Dockerfile
+          # Built and discarded. Pushing happens only from a tag, in the CD workflow.
+          push: false
+          # GitHub Actions cache, so layers survive between runs on ephemeral runners.
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,scope=api,mode=max
+
+      - name: Build the web image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/web.Dockerfile
+          push: false
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,scope=web,mode=max

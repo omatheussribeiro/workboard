@@ -1,0 +1,4 @@
+{
+  "_comment": "Placeholder. In the container, docker/web-entrypoint.sh overwrites this file from API_BASE_URL at start. Left empty here so src/environments/environment*.ts supplies the value during ng serve.",
+  "apiBaseUrl": ""
+}

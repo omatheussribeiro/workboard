@@ -1,0 +1,27 @@
+.titles {
+  position: relative;
+  min-width: 0;
+  padding-left: 0.95rem;
+}
+
+.titles::before {
+  position: absolute;
+  top: 0.2rem;
+  bottom: 0.15rem;
+  left: 0;
+  width: 3px;
+  border-radius: 999px;
+  background: linear-gradient(var(--accent), color-mix(in srgb, var(--accent) 35%, transparent));
+  content: '';
+}
+
+.titles h1 {
+  margin: 0;
+  letter-spacing: -0.035em;
+}
+
+.titles p {
+  max-width: 70ch;
+  margin: 0.35rem 0 0;
+  font-size: 0.86rem;
+}

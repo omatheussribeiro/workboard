@@ -1,0 +1,121 @@
+<main class="auth-page">
+  <section class="auth-shell" aria-labelledby="register-title">
+    <aside class="auth-showcase" aria-label="About WorkBoard">
+      <div class="showcase-glow showcase-glow-top" aria-hidden="true"></div>
+      <div class="showcase-glow showcase-glow-bottom" aria-hidden="true"></div>
+
+      <a class="brand-lockup" routerLink="/login" aria-label="WorkBoard home">
+        <span class="brand-mark" aria-hidden="true">WB</span>
+        <span>WorkBoard</span>
+      </a>
+
+      <div class="showcase-copy">
+        <span class="eyebrow">A calmer way to collaborate</span>
+        <h2>Build a workspace your team will want to use.</h2>
+        <p>
+          Start with a clear view of the work, then keep every conversation and decision moving in the same
+          direction.
+        </p>
+
+        <ul class="feature-list" aria-label="WorkBoard benefits">
+          <li><span class="feature-check" aria-hidden="true">✓</span>Create your workspace in minutes</li>
+          <li>
+            <span class="feature-check" aria-hidden="true">✓</span>Organize projects without the clutter
+          </li>
+          <li><span class="feature-check" aria-hidden="true">✓</span>Invite your team when you are ready</li>
+        </ul>
+      </div>
+
+      <div class="showcase-note">
+        <div class="avatar-stack" aria-hidden="true">
+          <span>AR</span>
+          <span>JS</span>
+          <span>ML</span>
+        </div>
+        <p><strong>Designed for focus.</strong><br />Flexible enough for every team.</p>
+      </div>
+    </aside>
+
+    <div class="auth-panel">
+      <div class="form-container">
+        <header class="form-heading">
+          <span class="eyebrow">Get started</span>
+          <h1 id="register-title">Create your account</h1>
+          <p>Your next project starts with a workspace built around your team.</p>
+        </header>
+
+        <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+          <div class="field">
+            <label for="displayName">Full name</label>
+            <input
+              id="displayName"
+              class="input"
+              autocomplete="name"
+              placeholder="Your name"
+              formControlName="displayName"
+              [class.invalid]="invalid('displayName')"
+              [attr.aria-invalid]="invalid('displayName')"
+              [attr.aria-describedby]="invalid('displayName') ? 'name-error' : null"
+            />
+            @if (invalid('displayName')) {
+              <span id="name-error" class="field-error">Tell us what to call you.</span>
+            }
+          </div>
+
+          <div class="field">
+            <label for="email">Email address</label>
+            <input
+              id="email"
+              class="input"
+              type="email"
+              inputmode="email"
+              autocomplete="username"
+              placeholder="you@company.com"
+              formControlName="email"
+              [class.invalid]="invalid('email')"
+              [attr.aria-invalid]="invalid('email')"
+              [attr.aria-describedby]="invalid('email') ? 'email-error' : null"
+            />
+            @if (invalid('email')) {
+              <span id="email-error" class="field-error">Enter a valid email address.</span>
+            }
+          </div>
+
+          <div class="field">
+            <label for="password">Password</label>
+            <input
+              id="password"
+              class="input"
+              type="password"
+              autocomplete="new-password"
+              placeholder="Create a secure password"
+              formControlName="password"
+              [class.invalid]="invalid('password')"
+              [attr.aria-invalid]="invalid('password')"
+              aria-describedby="password-hint password-error"
+            />
+            <span id="password-hint" class="field-hint">
+              Use at least 12 characters, including a letter and a number.
+            </span>
+            @if (invalid('password')) {
+              <span id="password-error" class="field-error">{{ passwordError() }}</span>
+            }
+          </div>
+
+          <button type="submit" class="btn btn-primary submit-button" [disabled]="busy()">
+            @if (busy()) {
+              <span class="button-spinner" aria-hidden="true"></span>
+            }
+            {{ busy() ? 'Creating…' : 'Create account' }}
+          </button>
+        </form>
+
+        <p class="account-switch">Already have an account? <a routerLink="/login">Sign in</a></p>
+
+        <p class="privacy-note">
+          By creating an account, you agree to keep your workspace secure and use WorkBoard responsibly.
+        </p>
+      </div>
+    </div>
+  </section>
+</main>

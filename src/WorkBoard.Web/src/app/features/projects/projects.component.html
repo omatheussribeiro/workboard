@@ -1,0 +1,82 @@
+<div class="page">
+  <wb-page-header title="Projects" subtitle="Each project gets its own board.">
+    <button type="button" class="btn btn-primary" (click)="toggleForm()">
+      {{ showForm() ? 'Cancel' : 'New project' }}
+    </button>
+  </wb-page-header>
+
+  @if (showForm()) {
+    <form class="card card-padded create-form" [formGroup]="form" (ngSubmit)="create()">
+      <div class="form-row">
+        <div class="field">
+          <label for="name">Name</label>
+          <input id="name" class="input" formControlName="name" placeholder="Platform" />
+        </div>
+        <div class="field key-field">
+          <label for="key">Key</label>
+          <input id="key" class="input mono" formControlName="key" placeholder="PLAT" maxlength="10" />
+          <!-- Explained up front: the key becomes part of every task reference in the project and
+               cannot be changed afterwards without renumbering them. -->
+          <span class="subtle">2–10 letters. Tasks will be numbered PLAT-1, PLAT-2, …</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="description">Description</label>
+        <textarea id="description" class="textarea" formControlName="description"></textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primary" [disabled]="form.invalid || busy()">
+        {{ busy() ? 'Creating…' : 'Create project' }}
+      </button>
+    </form>
+  }
+
+  @if (loading()) {
+    <wb-loading what="projects" />
+  } @else if (projects().length === 0) {
+    <wb-empty title="No projects yet" message="A project holds a board, its columns and its tasks.">
+      <button type="button" class="btn btn-primary" (click)="toggleForm()">Create the first one</button>
+    </wb-empty>
+  } @else {
+    <div class="project-grid">
+      @for (project of projects(); track project.id) {
+        <article class="card card-padded project">
+          <div class="spread">
+            <h2>
+              <span class="mono key">{{ project.key }}</span>
+              {{ project.name }}
+            </h2>
+            @if (project.isArchived) {
+              <span class="chip archived">Archived</span>
+            }
+          </div>
+
+          @if (project.description) {
+            <p class="muted description">{{ project.description }}</p>
+          }
+
+          <div class="counts subtle">{{ project.openTaskCount }} open of {{ project.taskCount }}</div>
+
+          <div class="actions">
+            @if (project.defaultBoardId) {
+              <a class="btn btn-secondary btn-sm" [routerLink]="['/boards', project.defaultBoardId]">
+                Open board
+              </a>
+            }
+            <a
+              class="btn btn-ghost btn-sm"
+              [routerLink]="['/tasks']"
+              [queryParams]="{ projectId: project.id }"
+            >
+              Tasks
+            </a>
+            @if (workspaces.isAdmin() && !project.isArchived) {
+              <button type="button" class="btn btn-ghost btn-sm" (click)="archive(project)">Archive</button>
+            }
+          </div>
+        </article>
+      }
+    </div>
+  }
+</div>

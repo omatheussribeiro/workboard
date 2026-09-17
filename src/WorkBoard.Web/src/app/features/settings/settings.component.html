@@ -1,0 +1,124 @@
+<div class="page">
+  <wb-page-header title="Settings" [subtitle]="workspaces.current()?.name ?? ''" />
+
+  @if (loading()) {
+    <wb-loading />
+  } @else {
+    <div class="grid">
+      <section class="card card-padded">
+        <h2>Members</h2>
+
+        <ul class="members">
+          @for (member of members(); track member.userId) {
+            <li>
+              <div class="who">
+                <strong>{{ member.displayName }}</strong>
+                <span class="subtle">{{ member.email }}</span>
+                <span class="subtle">Joined {{ member.joinedAtUtc | date: 'MMM y' }}</span>
+              </div>
+
+              <!-- The owner row is read-only for everyone. The API refuses to demote or remove an
+                   owner, so offering the control would only produce a 422. -->
+              @if (member.role === 'Owner') {
+                <span class="chip owner">Owner</span>
+              } @else if (workspaces.isAdmin()) {
+                <div class="row">
+                  <select
+                    class="select role"
+                    [value]="member.role"
+                    (change)="changeRole(member, $event)"
+                    [attr.aria-label]="'Role for ' + member.displayName"
+                  >
+                    <option value="Member">Member</option>
+                    <option value="Admin">Admin</option>
+                  </select>
+                  <button type="button" class="btn btn-ghost btn-sm" (click)="removeMember(member)">
+                    Remove
+                  </button>
+                </div>
+              } @else {
+                <span class="chip">{{ member.role }}</span>
+              }
+            </li>
+          }
+        </ul>
+
+        @if (workspaces.isAdmin()) {
+          <form class="invite" (ngSubmit)="addMember()">
+            <input
+              class="input"
+              type="email"
+              placeholder="someone@example.com"
+              [ngModel]="inviteEmail()"
+              (ngModelChange)="inviteEmail.set($event)"
+              name="email"
+              aria-label="Email address"
+            />
+            <select
+              class="select"
+              [ngModel]="inviteRole()"
+              (ngModelChange)="inviteRole.set($event)"
+              name="role"
+              aria-label="Role"
+            >
+              <option value="Member">Member</option>
+              <option value="Admin">Admin</option>
+            </select>
+            <button type="submit" class="btn btn-primary btn-sm" [disabled]="!inviteEmail().trim()">
+              Add
+            </button>
+          </form>
+          <p class="subtle">
+            The account has to exist already — WorkBoard does not create one on your behalf.
+          </p>
+        }
+      </section>
+
+      <section class="card card-padded">
+        <h2>Labels</h2>
+
+        @if (labels().length === 0) {
+          <p class="muted">No labels yet.</p>
+        } @else {
+          <ul class="labels">
+            @for (label of labels(); track label.id) {
+              <li>
+                <wb-label-chip [label]="label" />
+                <span class="subtle">{{ label.taskCount }} task(s)</span>
+                @if (workspaces.isAdmin()) {
+                  <button type="button" class="btn btn-ghost btn-sm" (click)="deleteLabel(label)">
+                    Delete
+                  </button>
+                }
+              </li>
+            }
+          </ul>
+        }
+
+        @if (workspaces.isAdmin()) {
+          <form class="new-label" (ngSubmit)="createLabel()">
+            <input
+              class="input"
+              placeholder="bug"
+              [ngModel]="labelName()"
+              (ngModelChange)="labelName.set($event)"
+              name="labelName"
+              aria-label="Label name"
+            />
+            <input
+              class="colour"
+              type="color"
+              [ngModel]="labelColour()"
+              (ngModelChange)="labelColour.set($event)"
+              name="labelColour"
+              aria-label="Label colour"
+            />
+            <button type="submit" class="btn btn-primary btn-sm" [disabled]="!labelName().trim()">Add</button>
+          </form>
+        } @else {
+          <p class="subtle">Only workspace admins can change the labels everyone filters by.</p>
+        }
+      </section>
+    </div>
+  }
+</div>

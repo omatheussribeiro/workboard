@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Application and Domain only — no Infrastructure. Every dependency a use case has is an interface
+    this project can substitute, so a test that needed the real persistence layer would fail to
+    compile rather than quietly start using a database.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\WorkBoard.Application\WorkBoard.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NSubstitute" />
+  </ItemGroup>
+
+</Project>

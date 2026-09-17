@@ -1,0 +1,189 @@
+name: CD
+
+# Fires on a version tag. Tags are the release trigger rather than a push to main, because a release
+# should be a deliberate act with a name that can be referred to afterwards — "v1.2.0", not "the
+# build from Tuesday afternoon".
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  # Lets a release be re-run from the Actions tab without moving a tag, which is what you need when a
+  # publish fails for an infrastructure reason rather than a code one.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to publish (for example v1.0.0)'
+        required: true
+        type: string
+
+concurrency:
+  group: cd-${{ github.ref }}
+  # Never cancelled mid-flight: interrupting a push leaves a half-published manifest in the registry.
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  REGISTRY: ghcr.io
+  DOTNET_VERSION: '10.0.x'
+  NODE_VERSION: '24.x'
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  # ===============================================================================================
+  # The gate. A tag can be pushed to any commit, including one that never passed CI, so the tests
+  # run again here rather than trusting that they ran before.
+  # ===============================================================================================
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Build and test the backend
+        run: |
+          dotnet restore
+          dotnet build --configuration Release --no-restore
+          dotnet test --configuration Release --no-build
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: src/WorkBoard.Web/package-lock.json
+
+      - name: Build and test the frontend
+        working-directory: src/WorkBoard.Web
+        run: |
+          npm ci --no-audit --no-fund
+          npm run lint
+          npm run test:ci
+          npm run build
+
+  # ===============================================================================================
+  # Publish both images to the GitHub Container Registry.
+  # ===============================================================================================
+  publish:
+    name: Publish ${{ matrix.component }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: verify
+
+    permissions:
+      contents: read
+      # The one permission that has to be widened. GITHUB_TOKEN is read-only by default and cannot
+      # push to GHCR without it — which is also why no PAT is needed here.
+      packages: write
+
+    strategy:
+      # One image failing should not cancel the other: a half-published release is easier to finish
+      # than to reason about.
+      fail-fast: false
+      matrix:
+        include:
+          - component: api
+            dockerfile: docker/api.Dockerfile
+          - component: web
+            dockerfile: docker/web.Dockerfile
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Sign in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          # The token the workflow already has. No secret to create, rotate or leak.
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Derive tags and labels
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.component }}
+          # v1.2.3 produces 1.2.3, 1.2 and 1 — so a deployment can pin exactly, or follow the minor
+          # or major line. "latest" is only applied to a non-prerelease tag.
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable=${{ !contains(github.ref_name, '-') }}
+          labels: |
+            org.opencontainers.image.title=WorkBoard ${{ matrix.component }}
+            org.opencontainers.image.description=Project management platform built with .NET 10, Angular and EF Core
+
+      - name: Build and push
+        id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # amd64 and arm64: CI runners are amd64, and an Apple Silicon laptop pulling an amd64-only
+          # image runs it under emulation, slowly.
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha,scope=${{ matrix.component }}
+          cache-to: type=gha,scope=${{ matrix.component }},mode=max
+          # A software bill of materials and a build attestation, recorded alongside the image.
+          provenance: true
+          sbom: true
+
+  # ===============================================================================================
+  # The GitHub Release, created after the images exist so its notes can point at them.
+  # ===============================================================================================
+  release:
+    name: GitHub Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: publish
+
+    permissions:
+      # Needed to create the release. Scoped to this job only, rather than granted workflow-wide.
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          # The full history: release notes are generated from the commits since the previous tag,
+          # and the default shallow clone has none of them.
+          fetch-depth: 0
+
+      - name: Publish the release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          # Generated from merged pull requests since the last tag, which is the argument for writing
+          # PR titles as if someone will read them later.
+          generate_release_notes: true
+          # A tag containing a hyphen (v1.0.0-rc.1) is a prerelease by SemVer, and is marked as one.
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          body: |
+            ## Container images
+
+            ```bash
+            docker pull ghcr.io/${{ github.repository }}-api:${{ inputs.tag || github.ref_name }}
+            docker pull ghcr.io/${{ github.repository }}-web:${{ inputs.tag || github.ref_name }}
+            ```
+
+            Both are published for `linux/amd64` and `linux/arm64`, with provenance and an SBOM.
+
+            > Database migrations are **not** applied by the containers. Generate and apply the
+            > idempotent script first — see `docs/adr/012-migrations-in-the-pipeline.md`.

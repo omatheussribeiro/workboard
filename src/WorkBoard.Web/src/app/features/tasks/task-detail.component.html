@@ -1,0 +1,265 @@
+@if (loading()) {
+  <div class="page"><wb-loading /></div>
+} @else if (task(); as detail) {
+  <div class="page detail">
+    <header class="page-header">
+      <div>
+        <p class="subtle">
+          <a routerLink="/tasks">Tasks</a> · <span class="mono">{{ detail.key }}</span> ·
+          {{ detail.projectName }}
+        </p>
+        @if (!editing()) {
+          <h1>{{ detail.title }}</h1>
+        }
+      </div>
+      <div class="row">
+        @if (!editing()) {
+          <button type="button" class="btn btn-secondary btn-sm" (click)="startEditing()">Edit</button>
+        }
+        <button type="button" class="btn btn-ghost btn-sm" (click)="deleteTask()">Delete</button>
+      </div>
+    </header>
+
+    <div class="detail-grid">
+      <div class="stack main-column">
+        @if (editing()) {
+          <section class="card card-padded">
+            <div class="field">
+              <label for="title">Title</label>
+              <input
+                id="title"
+                class="input"
+                [ngModel]="draftTitle()"
+                (ngModelChange)="draftTitle.set($event)"
+                name="title"
+              />
+            </div>
+
+            <div class="field">
+              <label for="description">Description</label>
+              <textarea
+                id="description"
+                class="textarea"
+                [ngModel]="draftDescription()"
+                (ngModelChange)="draftDescription.set($event)"
+                name="description"
+              ></textarea>
+            </div>
+
+            <div class="edit-row">
+              <div class="field">
+                <label for="priority">Priority</label>
+                <select
+                  id="priority"
+                  class="select"
+                  [ngModel]="draftPriority()"
+                  (ngModelChange)="draftPriority.set($event)"
+                  name="priority"
+                >
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                  <option value="Critical">Critical</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="due">Due date</label>
+                <input
+                  id="due"
+                  class="input"
+                  type="date"
+                  [ngModel]="draftDue()"
+                  (ngModelChange)="draftDue.set($event)"
+                  name="due"
+                />
+              </div>
+            </div>
+
+            <div class="row">
+              <button type="button" class="btn btn-primary" (click)="save()" [disabled]="saving()">
+                {{ saving() ? 'Saving…' : 'Save' }}
+              </button>
+              <button type="button" class="btn btn-ghost" (click)="cancelEditing()">Cancel</button>
+            </div>
+          </section>
+        } @else {
+          <section class="card card-padded">
+            <h2>Description</h2>
+            @if (detail.description) {
+              <p class="description">{{ detail.description }}</p>
+            } @else {
+              <p class="muted">No description yet.</p>
+            }
+          </section>
+        }
+
+        @if (detail.subtasks.length > 0) {
+          <section class="card card-padded">
+            <h2>Subtasks</h2>
+            <ul class="subtasks">
+              @for (subtask of detail.subtasks; track subtask.id) {
+                <li>
+                  <span class="mono key">{{ subtask.key }}</span>
+                  <a [routerLink]="['/tasks', subtask.id]">{{ subtask.title }}</a>
+                  @if (subtask.isCompleted) {
+                    <span class="chip done">Done</span>
+                  }
+                </li>
+              }
+            </ul>
+          </section>
+        }
+
+        <section class="card card-padded">
+          <h2>Comments</h2>
+
+          @if (comments().length === 0) {
+            <p class="muted">Nothing here yet.</p>
+          } @else {
+            <ul class="comments">
+              @for (comment of comments(); track comment.id) {
+                <li>
+                  <div class="spread">
+                    <strong>{{ comment.authorName }}</strong>
+                    <span class="subtle">
+                      {{ comment.createdAtUtc | date: 'MMM d, HH:mm' }}
+                      @if (comment.editedAtUtc) {
+                        · edited
+                      }
+                    </span>
+                  </div>
+                  <p class="comment-body">{{ comment.body }}</p>
+                  @if (comment.canEdit) {
+                    <button type="button" class="btn btn-ghost btn-sm" (click)="deleteComment(comment)">
+                      Delete
+                    </button>
+                  }
+                </li>
+              }
+            </ul>
+          }
+
+          <form class="comment-form" (ngSubmit)="addComment()">
+            <textarea
+              class="textarea"
+              placeholder="Add a comment…"
+              [ngModel]="newComment()"
+              (ngModelChange)="newComment.set($event)"
+              name="comment"
+            ></textarea>
+            <button type="submit" class="btn btn-primary btn-sm" [disabled]="!newComment().trim()">
+              Comment
+            </button>
+          </form>
+        </section>
+      </div>
+
+      <aside class="stack side-column">
+        <section class="card card-padded">
+          <h2>Details</h2>
+          <dl class="meta">
+            <dt>Status</dt>
+            <dd>
+              <span class="chip status">{{ detail.columnName }}</span>
+            </dd>
+
+            <dt>Priority</dt>
+            <dd><wb-priority [priority]="detail.priority" /></dd>
+
+            <dt>Due</dt>
+            <dd>
+              @if (detail.dueAtUtc) {
+                <span [class.overdue]="detail.isOverdue">{{ detail.dueAtUtc | date: 'MMM d, y' }}</span>
+              } @else {
+                <span class="muted">No deadline</span>
+              }
+            </dd>
+
+            <dt>Created</dt>
+            <dd>{{ detail.createdByName }}, {{ detail.createdAtUtc | date: 'MMM d, y' }}</dd>
+
+            @if (detail.completedAtUtc) {
+              <dt>Completed</dt>
+              <dd>{{ detail.completedAtUtc | date: 'MMM d, y' }}</dd>
+            }
+          </dl>
+        </section>
+
+        <section class="card card-padded">
+          <h2>Assignees</h2>
+          @if (detail.assignees.length === 0) {
+            <p class="muted">Nobody yet.</p>
+          } @else {
+            <ul class="assignee-list">
+              @for (assignee of detail.assignees; track assignee.userId) {
+                <li>
+                  <wb-assignees [assignees]="[assignee]" />
+                  <span>{{ assignee.displayName }}</span>
+                  <button type="button" class="btn btn-ghost btn-sm" (click)="unassign(assignee.userId)">
+                    Remove
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+
+          @if (unassignedMembers().length > 0) {
+            <select class="select" (change)="assign($event)" aria-label="Assign someone">
+              <option value="">Assign someone…</option>
+              @for (member of unassignedMembers(); track member.userId) {
+                <option [value]="member.userId">{{ member.displayName }}</option>
+              }
+            </select>
+          }
+        </section>
+
+        <section class="card card-padded">
+          <h2>Labels</h2>
+          @if (labels().length === 0) {
+            <p class="muted">No labels in this workspace yet.</p>
+          } @else {
+            <div class="label-picker">
+              @for (label of labels(); track label.id) {
+                <button
+                  type="button"
+                  class="label-toggle"
+                  [class.applied]="hasLabel(label.id)"
+                  (click)="toggleLabel(label)"
+                  [attr.aria-pressed]="hasLabel(label.id)"
+                >
+                  <wb-label-chip [label]="label" />
+                </button>
+              }
+            </div>
+          }
+        </section>
+
+        <section class="card card-padded">
+          <h2>History</h2>
+          @if (history().length === 0) {
+            <p class="muted">Nothing recorded yet.</p>
+          } @else {
+            <ul class="history">
+              @for (entry of history(); track entry.id) {
+                <li>
+                  <span>
+                    <strong>{{ entry.actorName }}</strong>
+                    {{ entry.summary }}
+                  </span>
+                  <span class="subtle">{{ entry.occurredAtUtc | date: 'MMM d, HH:mm' }}</span>
+                </li>
+              }
+            </ul>
+          }
+        </section>
+      </aside>
+    </div>
+  </div>
+} @else {
+  <div class="page">
+    <wb-empty title="Task not found" message="It may have been deleted, or belong to another workspace.">
+      <a routerLink="/tasks" class="btn btn-secondary">Back to tasks</a>
+    </wb-empty>
+  </div>
+}

@@ -1,0 +1,30 @@
+<div class="page">
+  <wb-page-header
+    title="Activity"
+    subtitle="Written from domain events in the same transaction as the change, so the feed cannot disagree with the data."
+  />
+
+  @if (loading()) {
+    <wb-loading />
+  } @else if (entries().length === 0) {
+    <wb-empty title="Nothing has happened yet" message="Changes in this workspace will show up here." />
+  } @else {
+    <ol class="feed card">
+      @for (entry of entries(); track entry.id) {
+        <li>
+          <span class="avatar">{{ initials(entry.actorName) }}</span>
+          <div class="body">
+            <span>
+              <strong>{{ entry.actorName }}</strong>
+              {{ entry.summary }}
+              @if (entry.taskId) {
+                <a [routerLink]="['/tasks', entry.taskId]">View</a>
+              }
+            </span>
+            <span class="subtle">{{ entry.occurredAtUtc | date: 'MMM d, y HH:mm' }}</span>
+          </div>
+        </li>
+      }
+    </ol>
+  }
+</div>

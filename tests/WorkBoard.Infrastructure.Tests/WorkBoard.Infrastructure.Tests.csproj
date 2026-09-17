@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The adapters: token issuance, password hashing, and the clock. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\WorkBoard.Infrastructure\WorkBoard.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NSubstitute" />
+  </ItemGroup>
+
+</Project>

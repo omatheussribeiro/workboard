@@ -1,0 +1,32 @@
+.priority {
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--priority-medium);
+}
+
+.priority[data-priority='Low'] .dot {
+  background: var(--priority-low);
+}
+
+.priority[data-priority='Medium'] .dot {
+  background: var(--priority-medium);
+}
+
+.priority[data-priority='High'] .dot {
+  background: var(--priority-high);
+}
+
+.priority[data-priority='Critical'] .dot {
+  background: var(--priority-critical);
+}
+
+.priority[data-priority='Critical'] {
+  color: var(--priority-critical);
+  font-weight: 600;
+}

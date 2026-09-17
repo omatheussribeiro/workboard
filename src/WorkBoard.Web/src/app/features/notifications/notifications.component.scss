@@ -1,0 +1,35 @@
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  padding: 0.35rem 0;
+}
+
+.list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 72px;
+  padding: 0.9rem 1.15rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.list li:last-child {
+  border-bottom: 0;
+}
+
+/* A left bar rather than a background tint: it survives dark mode without a second colour, and
+   it stays visible next to the row hover state. */
+.list li.unread {
+  border-left: 4px solid var(--accent);
+  background: color-mix(in srgb, var(--surface) 75%, var(--accent-soft));
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}

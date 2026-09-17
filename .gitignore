@@ -55,3 +55,47 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# ---------------------------------------------------------------------------------------------
+# WorkBoard
+# ---------------------------------------------------------------------------------------------
+
+# Private study notes. Never published — see the header of the file itself.
+docs/GITHUB-ACTIONS-SETUP-PRIVATE.md
+
+# Node
+node_modules/
+npm-debug.log*
+.angular/
+
+# Angular build output
+src/WorkBoard.Web/dist/
+src/WorkBoard.Web/.angular/
+
+# Test and coverage output
+artifacts/
+TestResults/
+coverage/
+*.trx
+*.coverage
+*.cobertura.xml
+
+# Local secrets and overrides. appsettings.json and the Development/Production files are committed
+# on purpose: they hold shape and safe defaults, never a credential.
+appsettings.Local.json
+appsettings.*.Local.json
+*.user
+.env
+.env.*
+!.env.example
+
+# EF Core scratch output
+*.sql.bak
+
+# Editors
+.vs/
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+.DS_Store

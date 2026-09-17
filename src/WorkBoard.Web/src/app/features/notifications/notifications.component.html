@@ -1,0 +1,35 @@
+<div class="page">
+  <wb-page-header title="Notifications" subtitle="Only for this workspace.">
+    @if (unreadCount() > 0) {
+      <button type="button" class="btn btn-secondary" (click)="markAllRead()">Mark all as read</button>
+    }
+  </wb-page-header>
+
+  @if (loading()) {
+    <wb-loading />
+  } @else if (items().length === 0) {
+    <wb-empty
+      title="Nothing to catch up on"
+      message="You will be told when someone assigns you a task or replies to one you are on."
+    />
+  } @else {
+    <ul class="list card">
+      @for (item of items(); track item.id) {
+        <li [class.unread]="!item.isRead">
+          <div class="body">
+            <span>{{ item.message }}</span>
+            <span class="subtle">{{ item.createdAtUtc | date: 'MMM d, HH:mm' }}</span>
+          </div>
+          <div class="row">
+            @if (item.taskId) {
+              <a class="btn btn-ghost btn-sm" [routerLink]="['/tasks', item.taskId]">Open</a>
+            }
+            @if (!item.isRead) {
+              <button type="button" class="btn btn-ghost btn-sm" (click)="markRead(item)">Mark read</button>
+            }
+          </div>
+        </li>
+      }
+    </ul>
+  }
+</div>

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Only the domain is referenced. That is the point of having this project separate: if a domain
+    rule ever needs EF Core or a container to exercise, this project stops compiling — which is a
+    louder signal than an architecture test, and arrives sooner.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\WorkBoard.Domain\WorkBoard.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

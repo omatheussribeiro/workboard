@@ -1,0 +1,74 @@
+<div class="page">
+  <wb-page-header title="Search" subtitle="Tasks, projects and comments in this workspace." />
+
+  <div class="field">
+    <label for="q">Search</label>
+    <input
+      id="q"
+      class="input"
+      type="search"
+      placeholder="Type at least two characters"
+      [ngModel]="term()"
+      (ngModelChange)="onInput($event)"
+      name="q"
+    />
+  </div>
+
+  @if (searching()) {
+    <p class="muted">Searching…</p>
+  } @else if (results(); as found) {
+    @if (found.tasks.length + found.projects.length + found.comments.length === 0) {
+      <wb-empty title="No matches" message="Try a different word." />
+    } @else {
+      <div class="results">
+        @if (found.tasks.length > 0) {
+          <section class="card card-padded">
+            <h2>Tasks</h2>
+            <ul>
+              @for (hit of found.tasks; track hit.id) {
+                <li>
+                  <a [routerLink]="['/tasks', hit.id]">
+                    <span class="mono key">{{ hit.subtitle }}</span>
+                    {{ hit.title }}
+                  </a>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+
+        @if (found.projects.length > 0) {
+          <section class="card card-padded">
+            <h2>Projects</h2>
+            <ul>
+              @for (hit of found.projects; track hit.id) {
+                <li>
+                  <a routerLink="/projects">
+                    <span class="mono key">{{ hit.subtitle }}</span>
+                    {{ hit.title }}
+                  </a>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+
+        @if (found.comments.length > 0) {
+          <section class="card card-padded">
+            <h2>Comments</h2>
+            <ul>
+              @for (hit of found.comments; track hit.id) {
+                <li>
+                  <a [routerLink]="['/tasks', hit.taskId]">
+                    <strong>{{ hit.title }}</strong>
+                    <span class="excerpt muted">{{ hit.subtitle }}</span>
+                  </a>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+      </div>
+    }
+  }
+</div>

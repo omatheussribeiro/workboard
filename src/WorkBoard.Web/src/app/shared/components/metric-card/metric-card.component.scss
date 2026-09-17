@@ -1,0 +1,79 @@
+:host {
+  display: block;
+}
+
+.metric {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 118px;
+  overflow: hidden;
+  padding: 1.2rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.metric::after {
+  position: absolute;
+  right: -2rem;
+  bottom: -3rem;
+  width: 7rem;
+  height: 7rem;
+  border-radius: 50%;
+  background: var(--metric-soft, var(--surface-raised));
+  content: '';
+}
+
+.metric-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.metric-label {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.metric-value {
+  color: var(--metric-color, var(--text));
+  font-size: 2rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.metric-symbol {
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.8rem;
+  background: var(--metric-soft, var(--surface-raised));
+  color: var(--metric-color, var(--text-muted));
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.metric[data-tone='accent'] {
+  --metric-color: var(--accent);
+  --metric-soft: var(--accent-soft);
+}
+
+.metric[data-tone='success'] {
+  --metric-color: var(--success);
+  --metric-soft: var(--success-soft);
+}
+
+.metric[data-tone='danger'] {
+  --metric-color: var(--danger);
+  --metric-soft: var(--danger-soft);
+}

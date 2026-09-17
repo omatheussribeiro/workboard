@@ -1,0 +1,194 @@
+.welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  max-width: 760px;
+  padding: clamp(1.5rem, 4vw, 3rem);
+}
+
+.welcome p {
+  max-width: 62ch;
+  margin: 0 0 0.5rem;
+}
+
+.eyebrow {
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 1.25rem;
+  align-items: start;
+}
+
+h2 {
+  margin-bottom: 1rem;
+  font-size: 1rem;
+}
+
+/* ------------------------------------------------------------------------------------- status */
+
+.status-bar {
+  display: flex;
+  height: 14px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--surface-sunken);
+}
+
+.status-segment[data-category='Todo'] {
+  background: var(--priority-low);
+}
+.status-segment[data-category='InProgress'] {
+  background: var(--priority-medium);
+}
+.status-segment[data-category='Done'] {
+  background: var(--success);
+}
+
+.legend {
+  list-style: none;
+  margin: 0.85rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.legend strong {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.swatch.todo {
+  background: var(--priority-low);
+}
+.swatch.in-progress {
+  background: var(--priority-medium);
+}
+.swatch.done {
+  background: var(--success);
+}
+
+/* --------------------------------------------------------------------------------- throughput */
+
+.throughput {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 110px;
+  padding-top: 0.25rem;
+}
+
+.bar {
+  flex: 1;
+  background: var(--accent);
+  border-radius: 6px 6px 2px 2px;
+  min-height: 4px;
+  opacity: 0.85;
+}
+
+.bar:hover {
+  opacity: 1;
+}
+
+/* ----------------------------------------------------------------------------------- projects */
+
+.project-list,
+.task-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.progress {
+  height: 6px;
+  margin-top: 0.35rem;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+
+.progress span {
+  display: block;
+  height: 100%;
+  background: var(--success);
+  border-radius: 999px;
+}
+
+.key {
+  color: var(--text-subtle);
+  font-size: 0.6875rem;
+  margin-right: 0.35rem;
+}
+
+/* ---------------------------------------------------------------------------------- my tasks */
+
+.task-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.15rem 0 0.9rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.task-list li:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.task-link {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.task-link:hover {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.column-name {
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+}
+
+.due {
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+}
+
+.due.overdue {
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-weight: 600;
+}

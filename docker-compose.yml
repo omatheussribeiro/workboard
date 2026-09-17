@@ -1,0 +1,98 @@
+# =================================================================================================
+# WorkBoard — the whole stack on one machine.
+#
+#   docker compose up --build
+#
+#   web  → http://localhost:4200
+#   api  → http://localhost:5080  (Scalar at /scalar/v1, Swagger UI at /swagger)
+#   sql  → localhost,1433
+#
+# Development settings throughout. The API waits for SQL Server to accept connections, creates the
+# database if it is not there, applies the migrations and seeds the demo data — so a cold volume and
+# a first `docker compose up` need no manual step.
+#
+# Nothing here is a production topology — see docs/adr/012-migrations-in-the-pipeline.md for why
+# production applies migrations as a separate, reviewable step instead.
+# =================================================================================================
+
+name: workboard
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: workboard-sqlserver
+    environment:
+      ACCEPT_EULA: 'Y'
+      # Local only, and deliberately visible. Every other credential in this repository comes from
+      # the environment; this one exists so `docker compose up` works with no setup at all.
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-Your_password123}
+      MSSQL_PID: Developer
+    ports:
+      - '1433:1433'
+    volumes:
+      - sqldata:/var/opt/mssql
+    healthcheck:
+      # The API waits on this. Without it, the API starts first, fails to connect, and restarts in a
+      # loop until SQL Server finishes its own multi-second startup.
+      test:
+        [
+          'CMD-SHELL',
+          '/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -C -Q "SELECT 1" || exit 1',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  workboard-api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    image: workboard-api:local
+    container_name: workboard-api
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_HTTP_PORTS: '8080'
+
+      # Double underscore is how .NET maps an environment variable onto a nested configuration key.
+      ConnectionStrings__Default: 'Server=sqlserver,1433;Database=WorkBoard;User Id=sa;Password=${MSSQL_SA_PASSWORD:-Your_password123};TrustServerCertificate=True;Encrypt=False'
+
+      # Development-only key. In any real deployment this comes from a secret store, and the host
+      # refuses to start if it is shorter than 32 characters.
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:-local-development-signing-key-change-me-now}
+
+      Database__MigrateOnStartup: 'true'
+      Database__SeedDemoData: 'true'
+
+      # The browser talks to the API from http://localhost:4200, which is a different origin.
+      Cors__AllowedOrigins__0: 'http://localhost:4200'
+
+      # Unset by default: with no collector to send to, the exporter would retry and log on every
+      # batch. Point it at one (Jaeger, Seq, an OTEL collector) to see traces.
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+    ports:
+      - '5080:8080'
+    restart: unless-stopped
+
+  workboard-web:
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    image: workboard-web:local
+    container_name: workboard-web
+    depends_on:
+      - workboard-api
+    environment:
+      # Written into config.json by the entrypoint at start. It is the URL the *browser* uses, so it
+      # is localhost — not the compose service name, which only resolves inside the network.
+      API_BASE_URL: http://localhost:5080
+    ports:
+      - '4200:80'
+    restart: unless-stopped
+
+volumes:
+  sqldata:
+    driver: local

@@ -1,0 +1,6 @@
+<!-- aria-live="polite" so the wait is announced when it starts and when the content replaces it,
+     rather than leaving a screen-reader user on a silent, apparently empty page. -->
+<p class="loading muted" role="status" aria-live="polite">
+  <span class="spinner" aria-hidden="true"></span>
+  {{ what() ? 'Loading ' + what() + '…' : 'Loading…' }}
+</p>

@@ -1,0 +1,119 @@
+<div class="shell" [class.sidebar-open]="sidebarOpen()">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">WB</span>
+      <span class="brand-copy">
+        <span class="brand-name">WorkBoard</span>
+        <span class="brand-tagline">Team workspace</span>
+      </span>
+    </div>
+
+    <div class="workspace-picker">
+      <div class="workspace-label">
+        <label for="workspace-select">Workspace</label>
+        <span class="online-dot" aria-hidden="true"></span>
+      </div>
+
+      @if (workspaces.workspaces().length > 0) {
+        <select
+          id="workspace-select"
+          class="select"
+          [value]="workspaces.currentId() ?? ''"
+          (change)="onWorkspaceChange($event)"
+        >
+          @for (workspace of workspaces.workspaces(); track workspace.id) {
+            <option [value]="workspace.id">{{ workspace.name }}</option>
+          }
+        </select>
+      } @else {
+        <p class="subtle">No workspaces yet.</p>
+      }
+
+      <a routerLink="/workspaces/new" class="btn btn-secondary btn-sm new-workspace" (click)="closeSidebar()">
+        <span aria-hidden="true">+</span> New workspace
+      </a>
+    </div>
+
+    <nav class="nav" aria-label="Main">
+      <span class="nav-section">Workspace</span>
+      <a routerLink="/dashboard" routerLinkActive="active" (click)="closeSidebar()">
+        <span class="nav-content"><span class="nav-icon" aria-hidden="true">D</span>Dashboard</span>
+      </a>
+      @if (workspaces.currentId()) {
+        <a routerLink="/projects" routerLinkActive="active" (click)="closeSidebar()">
+          <span class="nav-content"><span class="nav-icon" aria-hidden="true">P</span>Projects</span>
+        </a>
+        <a routerLink="/tasks" routerLinkActive="active" (click)="closeSidebar()">
+          <span class="nav-content"><span class="nav-icon" aria-hidden="true">T</span>Tasks</span>
+        </a>
+        <a routerLink="/activity" routerLinkActive="active" (click)="closeSidebar()">
+          <span class="nav-content"><span class="nav-icon" aria-hidden="true">A</span>Activity</span>
+        </a>
+        <a routerLink="/notifications" routerLinkActive="active" (click)="closeSidebar()">
+          <span class="nav-content"><span class="nav-icon" aria-hidden="true">N</span>Notifications</span>
+          @if (unreadCount() > 0) {
+            <span class="badge">{{ unreadCount() }}</span>
+          }
+        </a>
+        <a routerLink="/settings" routerLinkActive="active" (click)="closeSidebar()">
+          <span class="nav-content"><span class="nav-icon" aria-hidden="true">S</span>Settings</span>
+        </a>
+      }
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="row profile">
+        <span class="avatar">{{ initials() }}</span>
+        <div class="who">
+          <strong>{{ user()?.displayName }}</strong>
+          <span class="subtle">{{ user()?.email }}</span>
+        </div>
+      </div>
+      <button
+        type="button"
+        class="btn btn-ghost btn-sm sign-out"
+        [disabled]="signingOut()"
+        (click)="signOut()"
+        aria-label="Sign out"
+      >
+        {{ signingOut() ? '…' : 'Exit' }}
+      </button>
+    </div>
+  </aside>
+
+  @if (sidebarOpen()) {
+    <button type="button" class="scrim" aria-label="Close menu" (click)="closeSidebar()"></button>
+  }
+
+  <div class="main">
+    <header class="topbar">
+      <button
+        type="button"
+        class="btn btn-ghost btn-sm menu-toggle"
+        (click)="toggleSidebar()"
+        aria-label="Toggle navigation"
+      >
+        Menu
+      </button>
+      <div class="topbar-heading">
+        <span>Current workspace</span>
+        <strong class="topbar-title">{{ workspaces.current()?.name ?? 'WorkBoard' }}</strong>
+      </div>
+      @if (workspaces.currentId()) {
+        <a routerLink="/search" class="btn btn-secondary btn-sm search-action">
+          <span aria-hidden="true">⌕</span> Search
+        </a>
+      }
+    </header>
+
+    <main class="content">
+      @if (ready()) {
+        <router-outlet />
+      } @else {
+        <div class="page"><wb-loading what="your workspaces" /></div>
+      }
+    </main>
+  </div>
+
+  <wb-toast-host />
+</div>

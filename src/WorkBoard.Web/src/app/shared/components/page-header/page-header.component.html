@@ -1,0 +1,15 @@
+<header class="page-header">
+  <div class="titles">
+    <h1>{{ title() }}</h1>
+    @if (subtitle()) {
+      <p class="subtle">{{ subtitle() }}</p>
+    }
+
+    <!-- For a subtitle that is not plain text: a link, a count, an interpolated value. -->
+    <ng-content select="[subtitle]" />
+  </div>
+
+  <!-- Page actions. Projected rather than passed as inputs, because they are buttons with their own
+       handlers and a component input cannot carry a click. -->
+  <ng-content />
+</header>

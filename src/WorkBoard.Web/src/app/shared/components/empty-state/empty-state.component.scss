@@ -1,0 +1,53 @@
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: clamp(2.75rem, 7vw, 4.5rem) 1.5rem;
+  text-align: center;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(circle at 50% 0%, var(--accent-soft), transparent 12rem), var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.empty-illustration {
+  position: relative;
+  display: grid;
+  width: 3.4rem;
+  height: 3.4rem;
+  margin-bottom: 0.4rem;
+  place-items: center;
+  border-radius: 1.1rem;
+  background: var(--accent-soft);
+}
+
+.empty-illustration::before,
+.empty-illustration::after,
+.empty-illustration span {
+  position: absolute;
+  width: 1.25rem;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--accent);
+  content: '';
+}
+
+.empty-illustration::before {
+  transform: translateY(-6px);
+}
+
+.empty-illustration::after {
+  width: 0.8rem;
+  transform: translate(-0.22rem, 6px);
+}
+
+.empty h3 {
+  font-size: 1rem;
+}
+
+.empty p {
+  max-width: 48ch;
+  margin-bottom: 0.6rem;
+}

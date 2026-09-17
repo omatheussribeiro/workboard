@@ -1,0 +1,199 @@
+.detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+h2 {
+  margin-bottom: 0.7rem;
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+
+.description,
+.comment-body {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.edit-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* ------------------------------------------------------------------------------------ subtasks */
+
+.subtasks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.subtasks li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.key {
+  color: var(--text-subtle);
+  font-size: 0.75rem;
+}
+
+.done {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+/* ------------------------------------------------------------------------------------ comments */
+
+.comments {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.comments li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.2rem 0 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.comments li:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.comments .btn {
+  align-self: flex-start;
+}
+
+.comment-form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.comment-form .textarea {
+  min-height: 90px;
+}
+
+/* ---------------------------------------------------------------------------------------- meta */
+
+.meta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.7rem 1rem;
+  margin: 0;
+  align-items: center;
+}
+
+.meta dt {
+  font-size: 0.75rem;
+  color: var(--text-subtle);
+  font-weight: 600;
+}
+
+.meta dd {
+  margin: 0;
+}
+
+.status {
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+}
+
+.overdue {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* ----------------------------------------------------------------------------------- assignees */
+
+.assignee-list {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.assignee-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.assignee-list li span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* -------------------------------------------------------------------------------------- labels */
+
+.label-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+/* Unapplied labels are dimmed rather than hidden, so the whole taxonomy stays visible and one click
+   applies it. Opacity carries the state, and aria-pressed carries it for assistive technology. */
+.label-toggle {
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  opacity: 0.4;
+  transition: opacity 0.15s ease;
+}
+
+.label-toggle.applied,
+.label-toggle:hover {
+  opacity: 1;
+}
+
+/* ------------------------------------------------------------------------------------- history */
+
+.history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+}
+
+.history li {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 900px) {
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .edit-row {
+    grid-template-columns: 1fr;
+  }
+}

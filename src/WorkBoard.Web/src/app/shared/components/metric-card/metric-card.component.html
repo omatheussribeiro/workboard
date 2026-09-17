@@ -1,0 +1,9 @@
+<article class="metric" [attr.data-tone]="tone()">
+  <div class="metric-copy">
+    <span class="metric-label">{{ label() }}</span>
+    <strong class="metric-value">{{ value() }}</strong>
+  </div>
+  @if (symbol()) {
+    <span class="metric-symbol" aria-hidden="true">{{ symbol() }}</span>
+  }
+</article>

@@ -1,0 +1,133 @@
+@if (loading() && !board()) {
+  <div class="page"><wb-loading what="the board" /></div>
+} @else if (board(); as view) {
+  <div class="board-page">
+    <wb-page-header [title]="view.name">
+      <p subtitle class="subtle">
+        <span class="mono">{{ view.projectKey }}</span> ·
+        <a [routerLink]="['/projects']">All projects</a>
+      </p>
+    </wb-page-header>
+
+    <div class="board" cdkDropListGroup>
+      @for (column of view.columns; track column.id) {
+        <section class="column" [class.over-wip]="wipExceeded(column)">
+          <header class="column-header">
+            <div class="row">
+              <h2>{{ column.name }}</h2>
+              <span class="count" [class.warn]="wipReached(column)">
+                {{ column.cards.length }}
+                @if (column.wipLimit !== null) {
+                  <span class="limit">/{{ column.wipLimit }}</span>
+                }
+              </span>
+            </div>
+            <button
+              type="button"
+              class="btn btn-ghost btn-sm"
+              (click)="openComposer(column.id)"
+              [attr.aria-label]="'Add a task to ' + column.name"
+            >
+              +
+            </button>
+          </header>
+
+          @if (wipExceeded(column)) {
+            <p class="wip-warning">Over the WIP limit.</p>
+          }
+
+          <div
+            class="cards"
+            cdkDropList
+            [id]="column.id"
+            [cdkDropListData]="column"
+            [cdkDropListConnectedTo]="connectedLists()"
+            (cdkDropListDropped)="drop($event)"
+          >
+            @for (card of column.cards; track card.id) {
+              <article class="card-item" cdkDrag [cdkDragData]="card">
+                <!-- The placeholder keeps the column height stable while a card is in the air,
+                     so the rest of the board does not shift under the cursor. -->
+                <div class="card-placeholder" *cdkDragPlaceholder></div>
+
+                <a class="card-title" [routerLink]="['/tasks', card.id]">{{ card.title }}</a>
+
+                @if (card.labels.length > 0) {
+                  <div class="labels">
+                    @for (label of card.labels; track label.id) {
+                      <wb-label-chip [label]="label" />
+                    }
+                  </div>
+                }
+
+                <div class="card-meta">
+                  <span class="mono key">{{ card.key }}</span>
+                  <wb-priority [priority]="card.priority" />
+
+                  @if (card.dueAtUtc) {
+                    <span class="chip due" [class.overdue]="card.isOverdue">
+                      {{ card.dueAtUtc | date: 'MMM d' }}
+                    </span>
+                  }
+
+                  @if (card.subtaskCount > 0) {
+                    <span class="chip subtasks">
+                      {{ card.completedSubtaskCount }}/{{ card.subtaskCount }}
+                    </span>
+                  }
+
+                  @if (card.commentCount > 0) {
+                    <span class="chip comments">{{ card.commentCount }} 💬</span>
+                  }
+
+                  <span class="spacer"></span>
+                  <wb-assignees [assignees]="card.assignees" />
+                </div>
+              </article>
+            }
+
+            @if (column.cards.length === 0 && composerColumnId() !== column.id) {
+              <p class="column-empty subtle">Drop a card here.</p>
+            }
+          </div>
+
+          @if (composerColumnId() === column.id) {
+            <form class="composer" (ngSubmit)="createCard(column.id)">
+              <input
+                class="input"
+                placeholder="What needs doing?"
+                [ngModel]="newCardTitle()"
+                (ngModelChange)="newCardTitle.set($event)"
+                name="title"
+              />
+              <div class="composer-actions">
+                <select
+                  class="select"
+                  [ngModel]="newCardPriority()"
+                  (ngModelChange)="newCardPriority.set($event)"
+                  name="priority"
+                  aria-label="Priority"
+                >
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                  <option value="Critical">Critical</option>
+                </select>
+                <button type="submit" class="btn btn-primary btn-sm" [disabled]="!newCardTitle().trim()">
+                  Add
+                </button>
+                <button type="button" class="btn btn-ghost btn-sm" (click)="closeComposer()">Cancel</button>
+              </div>
+            </form>
+          }
+        </section>
+      }
+    </div>
+  </div>
+} @else {
+  <div class="page">
+    <wb-empty title="Board not found" message="It may belong to another workspace, or have been removed.">
+      <a routerLink="/projects" class="btn btn-secondary">Back to projects</a>
+    </wb-empty>
+  </div>
+}

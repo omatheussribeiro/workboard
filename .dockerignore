@@ -1,0 +1,32 @@
+# Everything that must not reach a build context.
+#
+# Without this, `COPY src/ src/` drags node_modules (hundreds of megabytes) and bin/obj into the
+# image layer, which is both enormous and wrong — obj/ holds paths from the host machine that break
+# the build inside the container.
+
+**/node_modules/
+**/bin/
+**/obj/
+**/dist/
+**/.angular/
+**/TestResults/
+artifacts/
+
+.git/
+.github/
+.vs/
+.vscode/
+.idea/
+
+docs/
+tests/
+*.md
+!src/WorkBoard.Web/README.md
+
+# Local secrets and overrides, which must never be baked into an image.
+**/appsettings.Local.json
+**/*.user
+.env
+.env.*
+
+docker-compose*.yml
