@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using WorkBoard.Application.Interfaces;
-using WorkBoard.Infrastructure.Persistence.Context;
 using WorkBoard.Infrastructure.Authentication;
 using WorkBoard.Domain.Enums;
 

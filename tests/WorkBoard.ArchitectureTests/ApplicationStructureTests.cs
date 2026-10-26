@@ -15,7 +15,7 @@ namespace WorkBoard.ArchitectureTests;
 /// </remarks>
 public sealed class ApplicationStructureTests
 {
-    private static readonly Assembly Application = typeof(IWorkBoardDbContext).Assembly;
+    private static readonly Assembly Application = typeof(IUnitOfWork).Assembly;
 
     private static IEnumerable<Type> UseCases() =>
         Application.GetTypes()
@@ -96,13 +96,13 @@ public sealed class ApplicationStructureTests
     /// A use case either reads or writes, never both.
     /// </summary>
     /// <remarks>
-    /// Reads compose projections over <see cref="IWorkBoardDbContext"/>; writes load aggregates
-    /// through repositories and commit through <see cref="IUnitOfWork"/>. A class holding both can
+    /// Reads use query interfaces; writes load aggregates through repositories and commit through
+    /// <see cref="IUnitOfWork"/>. A class holding both can
     /// compose any query it likes on the write path, which is how the aggregate-loading rules ended
     /// up duplicated in the first place — see ADR-013.
     /// </remarks>
     [Fact]
-    public void No_use_case_takes_both_the_DbContext_and_the_unit_of_work()
+    public void No_use_case_takes_both_a_query_interface_and_the_unit_of_work()
     {
         var offenders = UseCases()
             .Where(useCase =>
@@ -112,7 +112,9 @@ public sealed class ApplicationStructureTests
                     .Select(parameter => parameter.ParameterType)
                     .ToList();
 
-                return parameters.Contains(typeof(IWorkBoardDbContext))
+                return parameters.Any(parameter => parameter.IsInterface
+                                                   && parameter.Namespace == "WorkBoard.Application.Interfaces"
+                                                   && parameter.Name.EndsWith("Queries", StringComparison.Ordinal))
                        && parameters.Contains(typeof(IUnitOfWork));
             })
             .Select(useCase => useCase.Name)
@@ -152,6 +154,15 @@ public sealed class ApplicationStructureTests
             .Select(type => type.Name);
 
         misplacedValidators.Concat(misplacedMappings).Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Application_has_no_entity_framework_dependency()
+    {
+        var referencesEf = Application.GetReferencedAssemblies()
+            .Any(assembly => assembly.Name?.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.Ordinal) == true);
+
+        referencesEf.Should().BeFalse("EF Core queries and persistence helpers belong to Infrastructure");
     }
 
     /// <summary>

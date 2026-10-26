@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using WorkBoard.Application.Interfaces;
 using WorkBoard.Api.Security;
 using WorkBoard.Infrastructure.Authentication;
 using WorkBoard.Domain.Enums;
@@ -11,6 +12,8 @@ public static class AuthorizationRegistration
     /// <summary>Adds the workspace and system-admin policies, and the fail-closed fallback.</summary>
     public static IServiceCollection AddWorkBoardAuthorization(this IServiceCollection services)
     {
+        services.AddScoped<WorkspaceContext>();
+        services.AddScoped<ITenantContext>(sp => sp.GetRequiredService<WorkspaceContext>());
         services.AddScoped<IAuthorizationHandler, WorkspaceRoleHandler>();
 
         services.AddAuthorization(options =>

@@ -1,8 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using WorkBoard.Application.DTOs.Workspaces;
 using WorkBoard.Application.Interfaces;
-using WorkBoard.Application.Mappings.Workspaces;
-using WorkBoard.Domain.Entities;
 
 namespace WorkBoard.Application.UseCases.Workspaces.ListMyWorkspaces;
 
@@ -13,7 +10,7 @@ namespace WorkBoard.Application.UseCases.Workspaces.ListMyWorkspaces;
 /// has not been chosen yet. It is anchored on the caller's own user id, which is what makes crossing
 /// the filter safe, and it is covered by an isolation test.
 /// </remarks>
-public sealed class ListMyWorkspacesUseCase(IWorkBoardDbContext db, ICurrentUser currentUser)
+public sealed class ListMyWorkspacesUseCase(IWorkspaceQueries queries, ICurrentUser currentUser)
     : IListMyWorkspacesUseCase
 {
     /// <inheritdoc/>
@@ -21,11 +18,6 @@ public sealed class ListMyWorkspacesUseCase(IWorkBoardDbContext db, ICurrentUser
     {
         var userId = currentUser.RequireUserId();
 
-        return await db.IgnoringTenantFilter<WorkspaceMember>()
-            .AsNoTracking()
-            .Where(membership => membership.UserId == userId && !membership.Workspace.IsArchived)
-            .OrderBy(membership => membership.Workspace.Name)
-            .Select(WorkspaceMappings.ToSummary())
-            .ToListAsync(cancellationToken);
+        return await queries.ListForUserAsync(userId, cancellationToken);
     }
 }

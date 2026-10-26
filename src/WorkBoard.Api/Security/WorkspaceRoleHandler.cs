@@ -1,10 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore;
 using WorkBoard.Application.Interfaces;
-using WorkBoard.Infrastructure.Persistence.Context;
-using WorkBoard.Domain.Entities;
-using WorkBoard.Domain.Enums;
 
 namespace WorkBoard.Api.Security;
 
@@ -32,7 +28,7 @@ namespace WorkBoard.Api.Security;
 /// </remarks>
 public sealed class WorkspaceRoleHandler(
     IHttpContextAccessor httpContextAccessor,
-    IWorkBoardDbContext db,
+    IWorkspaceQueries workspaceQueries,
     WorkspaceContext workspaceContext,
     ILogger<WorkspaceRoleHandler> logger)
     : AuthorizationHandler<WorkspaceRoleRequirement>
@@ -58,14 +54,12 @@ public sealed class WorkspaceRoleHandler(
             return;
         }
 
-        // IgnoringTenantFilter is required and safe here: this query is what decides the tenant, so
-        // it cannot itself be filtered by one. It is anchored on the caller's own user id, so it can
-        // only ever return the caller's memberships.
-        var role = await db.IgnoringTenantFilter<WorkspaceMember>()
-            .AsNoTracking()
-            .Where(membership => membership.WorkspaceId == workspaceId && membership.UserId == userId)
-            .Select(membership => (WorkspaceRole?)membership.Role)
-            .FirstOrDefaultAsync();
+        // This query must run before the tenant is known, so its Infrastructure adapter bypasses
+        // the tenant filter while anchoring the lookup on the caller's own user id.
+        var role = await workspaceQueries.GetRoleForUserAsync(
+            workspaceId,
+            userId,
+            httpContext.RequestAborted);
 
         if (role is null || role < requirement.MinimumRole)
         {

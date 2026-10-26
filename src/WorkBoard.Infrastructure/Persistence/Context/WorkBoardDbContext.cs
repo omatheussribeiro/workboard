@@ -23,7 +23,7 @@ public sealed class WorkBoardDbContext(
     ITenantContext tenant,
     IClock clock,
     DomainEventDispatcher dispatcher)
-    : DbContext(options), IWorkBoardDbContext
+    : DbContext(options)
 {
     /// <summary>
     /// The tenant the query filters compare against.
