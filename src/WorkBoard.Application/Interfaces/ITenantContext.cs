@@ -6,13 +6,13 @@ namespace WorkBoard.Application.Interfaces;
 /// <remarks>
 /// <para>
 /// Resolved once per request from the route (or the <c>X-Workspace-Id</c> header) and validated
-/// against the membership table before any handler runs. From then on the value is ambient: the EF
+/// against the membership table before any use case runs. From then on the value is ambient: the EF
 /// Core global query filter reads it, so every tenant-scoped query is filtered whether or not the
 /// handler remembered to.
 /// </para>
 /// <para>
 /// This is the single most important object in the security model. Anything that sets it must have
-/// already proven membership — see <c>WorkspaceContextMiddleware</c> and the isolation tests.
+/// already proven membership — see the API's <c>WorkspaceRoleHandler</c> and the isolation tests.
 /// </para>
 /// </remarks>
 public interface ITenantContext

@@ -18,7 +18,7 @@ namespace WorkBoard.ArchitectureTests;
 public sealed class LayeringTests
 {
     private static readonly Assembly Domain = typeof(Entity).Assembly;
-    private static readonly Assembly Application = typeof(IWorkBoardDbContext).Assembly;
+    private static readonly Assembly Application = typeof(IUnitOfWork).Assembly;
     private static readonly Assembly Infrastructure = typeof(WorkBoardDbContext).Assembly;
     private static readonly Assembly Api = typeof(HttpCurrentUser).Assembly;
 
@@ -69,8 +69,7 @@ public sealed class LayeringTests
     [Fact]
     public void Application_does_not_depend_on_the_sql_server_provider()
     {
-        // The application layer uses EF Core on purpose (ADR-001) — but the provider is a deployment
-        // choice. Referencing it here would make the layer untestable against anything else.
+        // The application layer must not depend on a database provider.
         var result = Types.InAssembly(Application)
             .ShouldNot()
             .HaveDependencyOn("Microsoft.EntityFrameworkCore.SqlServer")
@@ -92,6 +91,18 @@ public sealed class LayeringTests
     }
 
     [Fact]
+    public void Infrastructure_does_not_depend_on_api()
+    {
+        var result = Types.InAssembly(Infrastructure)
+            .ShouldNot()
+            .HaveDependencyOn("WorkBoard.Api")
+            .GetResult();
+
+        result.FailingTypeNames.Should().BeNullOrEmpty(
+            "Infrastructure implements application ports and must not know the transport layer");
+    }
+
+    [Fact]
     public void Api_does_not_reference_the_concrete_DbContext_outside_composition()
     {
         // Program.cs names WorkBoardDbContext once, to register a health check. Anything else in the
@@ -105,6 +116,20 @@ public sealed class LayeringTests
 
         offenders.FailingTypeNames.Should().BeNullOrEmpty(
             "endpoints call application services, not the database directly");
+    }
+
+    [Fact]
+    public void Api_security_does_not_depend_on_infrastructure_persistence()
+    {
+        var result = Types.InAssembly(Api)
+            .That()
+            .ResideInNamespace("WorkBoard.Api.Security")
+            .ShouldNot()
+            .HaveDependencyOn("WorkBoard.Infrastructure.Persistence")
+            .GetResult();
+
+        result.FailingTypeNames.Should().BeNullOrEmpty(
+            "authorization uses application query ports and the API-owned tenant context");
     }
 
     [Fact]

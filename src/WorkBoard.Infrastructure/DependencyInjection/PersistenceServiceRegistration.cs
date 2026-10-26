@@ -4,12 +4,13 @@ using Microsoft.Extensions.DependencyInjection;
 using WorkBoard.Application.Interfaces;
 using WorkBoard.Infrastructure.Persistence.Context;
 using WorkBoard.Infrastructure.Persistence.Initialization;
+using WorkBoard.Infrastructure.Persistence.Queries;
 using WorkBoard.Infrastructure.Persistence.Repositories;
 using WorkBoard.Infrastructure.Services;
 
 namespace WorkBoard.Infrastructure.DependencyInjection;
 
-/// <summary>Registers the <c>DbContext</c>, the repositories, the unit of work and the tenant context.</summary>
+/// <summary>Registers the <c>DbContext</c>, query adapters, repositories and unit of work.</summary>
 public static class PersistenceServiceRegistration
 {
     /// <summary>Adds everything that talks to SQL Server.</summary>
@@ -17,19 +18,9 @@ public static class PersistenceServiceRegistration
     {
         services.AddDbContext<WorkBoardDbContext>(options => ConfigureSqlServer(options, configuration));
 
-        // Both names resolve to the same scoped instance. Handing the application layer the
-        // interface keeps it off the concrete context; handing the initialiser and the migrations
-        // tooling the class keeps them able to reach Database.Migrate.
-        services.AddScoped<IWorkBoardDbContext>(sp => sp.GetRequiredService<WorkBoardDbContext>());
-
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddRepositories();
-
-        // One instance per request, exposed under both names: the authorization handler needs the
-        // concrete type to call Enter, everything else sees the read-only interface.
-        services.AddScoped<WorkspaceContext>();
-        services.AddScoped<ITenantContext>(
-            sp => sp.GetRequiredService<WorkspaceContext>());
+        services.AddQueries();
 
         services.AddScoped<DomainEventDispatcher>();
         services.AddScoped<IDomainEventListener, ActivityWriter>();
@@ -59,6 +50,22 @@ public static class PersistenceServiceRegistration
         services.AddScoped<ILabelRepository, LabelRepository>();
         services.AddScoped<ICommentRepository, CommentRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
+
+        return services;
+    }
+
+    private static IServiceCollection AddQueries(this IServiceCollection services)
+    {
+        services.AddScoped<IActivityQueries, ActivityQueries>();
+        services.AddScoped<IBoardQueries, BoardQueries>();
+        services.AddScoped<ICommentQueries, CommentQueries>();
+        services.AddScoped<IDashboardQueries, DashboardQueries>();
+        services.AddScoped<ILabelQueries, LabelQueries>();
+        services.AddScoped<INotificationQueries, NotificationQueries>();
+        services.AddScoped<IProjectQueries, ProjectQueries>();
+        services.AddScoped<ISearchQueries, SearchQueries>();
+        services.AddScoped<ITaskQueries, TaskQueries>();
+        services.AddScoped<IWorkspaceQueries, WorkspaceQueries>();
 
         return services;
     }

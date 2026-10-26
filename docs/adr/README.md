@@ -24,3 +24,4 @@ are the ones that fit on a screen.
 | [012](012-migrations-in-the-pipeline.md) | Migrations applied by the pipeline, not at startup | Accepted |
 | [013](013-write-repositories-alongside-the-context.md) | Aggregate repositories for writes, projections for reads | Amended by 014 |
 | [014](014-use-case-per-operation.md) | The canonical Clean Architecture layout, one class per use case | Accepted |
+| [015](015-isolate-read-persistence.md) | EF Core read queries live in Infrastructure | Accepted; amends 001, 013 and 014 |

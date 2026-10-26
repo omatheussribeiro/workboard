@@ -18,7 +18,7 @@ namespace WorkBoard.ArchitectureTests;
 /// </remarks>
 public sealed class ServiceRegistrationTests
 {
-    private static readonly Assembly Application = typeof(IWorkBoardDbContext).Assembly;
+    private static readonly Assembly Application = typeof(IUnitOfWork).Assembly;
 
     private static ServiceCollection BuildContainer()
     {
@@ -67,6 +67,21 @@ public sealed class ServiceRegistrationTests
     }
 
     [Fact]
+    public void Every_query_interface_is_registered()
+    {
+        var registered = BuildContainer().Select(descriptor => descriptor.ServiceType).ToHashSet();
+
+        var declared = Application.GetTypes()
+            .Where(type => type.IsInterface)
+            .Where(type => type.Namespace == "WorkBoard.Application.Interfaces")
+            .Where(type => type.Name.EndsWith("Queries", StringComparison.Ordinal));
+
+        var missing = declared.Where(type => !registered.Contains(type)).Select(type => type.Name).ToList();
+
+        missing.Should().BeEmpty();
+    }
+
+    [Fact]
     public void Every_shared_application_service_is_registered()
     {
         var registered = BuildContainer().Select(descriptor => descriptor.ServiceType).ToHashSet();
@@ -95,6 +110,7 @@ public sealed class ServiceRegistrationTests
             .Where(descriptor => descriptor.ServiceType.Namespace?.StartsWith("WorkBoard.", StringComparison.Ordinal) == true)
             .Where(descriptor => descriptor.ServiceType.Name.EndsWith("UseCase", StringComparison.Ordinal)
                                  || descriptor.ServiceType.Name.EndsWith("Repository", StringComparison.Ordinal)
+                                 || descriptor.ServiceType.Name.EndsWith("Queries", StringComparison.Ordinal)
                                  || descriptor.ServiceType.Namespace == "WorkBoard.Application.Services")
             .Where(descriptor => descriptor.Lifetime == ServiceLifetime.Singleton)
             .Select(descriptor => descriptor.ServiceType.Name)

@@ -71,14 +71,9 @@ public sealed class TenantIsolationConventionTests
             "src/WorkBoard.Infrastructure/Persistence/Repositories/WorkspaceRepository.cs",
 
             // Answer "which workspaces does this user belong to", which cannot be workspace-scoped.
-            "src/WorkBoard.Application/UseCases/Workspaces/ListMyWorkspaces/ListMyWorkspacesUseCase.cs",
-            "src/WorkBoard.Application/UseCases/Workspaces/GetWorkspace/GetWorkspaceUseCase.cs",
-
-            // Resolves the tenant for the request, so it runs before one is set.
-            "src/WorkBoard.Api/Security/WorkspaceRoleHandler.cs",
+            "src/WorkBoard.Infrastructure/Persistence/Queries/WorkspaceQueries.cs",
 
             // Declare the escape hatch rather than use it.
-            "src/WorkBoard.Application/Interfaces/IWorkBoardDbContext.cs",
             "src/WorkBoard.Infrastructure/Persistence/Context/WorkBoardDbContext.cs",
 
             // Checks for an empty database before seeding, before any tenant exists.

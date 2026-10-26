@@ -31,10 +31,10 @@ them:
 - **Entity Framework Core used the way it should be** — projections on the read side, tracked
   aggregates on the write side, indexes designed from the queries that exist, and the common
   failure modes documented at the exact call sites where they were avoided.
-- **Decisions written down with their trade-offs** — twelve [ADRs](docs/adr/), each naming the
+- **Decisions written down with their trade-offs** — fifteen [ADRs](docs/adr/), each naming the
   problem, the options that were real, what was chosen and what was given up.
-- **125 automated tests** across three suites, including a security suite that sets up two real
-  tenants and tries every route from one to the other.
+- **233 automated tests** across five backend suites and the frontend suite, including a security suite
+  that sets up two real tenants and tries every route from one to the other.
 
 Every non-obvious choice in the codebase carries a comment explaining the alternative and why it was
 rejected. If you only read one file, read
@@ -123,10 +123,9 @@ rules are exercisable without a database, and an architecture test fails the bui
 being true.
 
 **The application layer depends on abstractions it defines**, grouped by what they abstract:
-a flat `Application/Interfaces`: `IWorkBoardDbContext`, `IUnitOfWork`, one repository per aggregate,
+a flat `Application/Interfaces`: query interfaces, `IUnitOfWork`, one repository per aggregate,
 `ICurrentUser`, `ITenantContext`, `ITokenService`, `IPasswordHasher`, `IClock`. Infrastructure supplies
-every one of them, which is what makes the dependency arrow point inwards despite the runtime
-relationship being the other way round.
+their implementations, which keeps the dependency arrow pointing inwards.
 
 **One class per use case.** `Application/UseCases/<Aggregate>/<Operation>/` holds an interface and a
 sealed class with a single `ExecuteAsync` — fifty-one of them, and the directory listing is the
@@ -137,7 +136,7 @@ inventory of everything the application can do. Four architecture tests keep it 
 
 | | Depends on | Loads | Why |
 | --- | --- | --- | --- |
-| Read use cases | `IWorkBoardDbContext` | projections to DTOs | LINQ composes into one statement; nothing is tracked, and only the listed columns are read |
+| Read use cases | feature query interfaces | DTOs from Infrastructure queries | LINQ composes into SQL; nothing is tracked, and only the listed columns are read |
 | Write use cases | aggregate repositories + `IUnitOfWork` | tracked aggregates | the domain object enforces its invariants, then the work commits once |
 
 **There is still no generic repository.** The eight repository interfaces share no base type and no
@@ -147,10 +146,11 @@ into every service that needed it, and the copies had already drifted. Reads nev
 The original decision is [ADR-001](docs/adr/001-use-entity-framework-core.md); what changed, and what
 it cost, is [ADR-013](docs/adr/013-write-repositories-alongside-the-context.md).
 
-**Mapping is expression trees, not a mapper.** `Application/Mappings/<Aggregate>/XMappings.cs` holds
-`Expression<Func<TEntity, TDto>>` projections that are handed to EF Core and become the SELECT list.
-A convention-based mapper would run after materialisation, which is the cost the projections exist to
-avoid — see ADR-013 for why AutoMapper is absent.
+**Mapping is expression trees, not a mapper.** Pure application mappings remain in
+`Application/Mappings/<Aggregate>`. Persistence-specific projections and query helpers live in
+`Infrastructure/Persistence/Queries`, where EF Core turns them into SQL SELECT lists. A
+convention-based mapper would run after materialisation, which is the cost the projections exist to
+avoid — see ADR-015.
 
 ### The request path
 
@@ -222,20 +222,20 @@ WorkBoard/
 │   │   ├── UseCases/<Aggregate>/<Operation>/#   51 of them: ICreateTaskUseCase + CreateTaskUseCase,
 │   │   │                                    #   one public ExecuteAsync each
 │   │   ├── DTOs/<Aggregate>/                #   Requests and responses, one per file
-│   │   ├── Interfaces/                      #   IWorkBoardDbContext, IUnitOfWork, I…Repository,
+│   │   ├── Interfaces/                      #   I…Queries, IUnitOfWork, I…Repository,
 │   │   │                                    #   ICurrentUser, ITenantContext, ITokenService, IClock
 │   │   ├── Validators/<Aggregate>/          #   FluentValidation, one per request
-│   │   ├── Mappings/<Aggregate>/            #   Expression<Func<TEntity, TDto>> projections
+│   │   ├── Mappings/<Aggregate>/            #   Pure application mappings
 │   │   ├── Services/                        #   The four rules shared by several use cases
 │   │   ├── Exceptions/                      #   NotFound, Forbidden, Conflict
-│   │   ├── Extensions/                      #   WhereIf, ToPagedResultAsync, NotDeleted
 │   │   └── Logging/                         #   Source-generated [LoggerMessage] delegates
 │   │
 │   ├── WorkBoard.Infrastructure/            # EF Core, SQL Server, security primitives.
 │   │   ├── Persistence/
-│   │   │   ├── Context/                     #   DbContext, factory, UnitOfWork, WorkspaceContext
+│   │   │   ├── Context/                     #   DbContext, design-time factory
 │   │   │   ├── Configurations/              #   Fluent API: keys, indexes, delete behaviour
 │   │   │   ├── Repositories/                #   The eight write-side repositories
+│   │   │   ├── Queries/                     #   Read query adapters, EF projections and helpers
 │   │   │   ├── Initialization/              #   Migrate-on-start, wait-for-server, demo seed
 │   │   │   └── Migrations/
 │   │   ├── Services/                        #   Clock, domain-event dispatcher, activity/notification writers
@@ -248,7 +248,7 @@ WorkBoard/
 │   │   ├── Middleware/                      #   Correlation id, security headers, ProblemDetails handler
 │   │   ├── Filters/                         #   The validation endpoint filter
 │   │   ├── Extensions/                      #   AddWorkBoard* registrations, pipeline, rate limits
-│   │   ├── Security/                        #   Workspace authorization handler, HttpCurrentUser
+│   │   ├── Security/                        #   Workspace authorization, request tenant context, HttpCurrentUser
 │   │   └── Program.cs                       #   52 lines: a table of contents
 │   │
 │   └── WorkBoard.Web/                       # Angular client.
@@ -269,10 +269,10 @@ WorkBoard/
 │   ├── WorkBoard.Domain.Tests/              # 56 — invariants and domain events, no database
 │   ├── WorkBoard.Application.Tests/         # 38 — use cases against substituted repositories
 │   ├── WorkBoard.Infrastructure.Tests/      # 12 — tokens, hashing, clock
-│   ├── WorkBoard.ArchitectureTests/         # 24 — layering, registration, file conventions
-│   └── WorkBoard.IntegrationTests/          # 45 — real HTTP, real SQL Server via Testcontainers
+│   ├── WorkBoard.ArchitectureTests/         # 28 — layering, registration, file conventions
+│   └── WorkBoard.IntegrationTests/          # 51 — real HTTP, real SQL Server via Testcontainers
 ├── docker/                                  # Dockerfiles, nginx config, runtime-config entrypoint
-├── docs/adr/                                # Fourteen decision records
+├── docs/adr/                                # Fifteen decision records
 └── .github/workflows/                       # ci.yml, cd.yml
 ```
 
@@ -424,7 +424,7 @@ await db.Boards
 | `AsNoTracking` on every read | every read use case under `UseCases/` |
 | Projection to DTOs, as reusable expression trees | `Mappings/*/*Mappings.cs` |
 | `WhereIf` so unused filters contribute no SQL | `Extensions/QueryableExtensions.cs` |
-| Paging with a clamped page size and a unique tiebreaker | `DTOs/Common/PageRequest.cs`, `ListTasksUseCase.ApplySort` |
+| Paging with a clamped page size and a unique tiebreaker | `DTOs/Common/PageRequest.cs`, `Infrastructure/Persistence/Queries/TaskQueries.cs` |
 | `GroupBy` translated to SQL, not applied in memory | `GetDashboardUseCase` |
 | Covering and filtered indexes | `Persistence/Configurations/*.cs` |
 | `Include` only on write paths, where an invariant needs the collection | `Persistence/Repositories/*.cs` — and nowhere else |
@@ -631,7 +631,7 @@ One test project per layer, each referencing only the layer it exercises:
 | **Domain** | 56 | Domain only | Invariants, guards and domain events, with no database and no host. |
 | **Application** | 38 | Application only | Use-case orchestration against substituted repositories. |
 | **Infrastructure** | 12 | Infrastructure | Token issuance, hashing, and the clock. |
-| **Architecture** | 24 | Api (so all of them) | Layering, registration, and the conventions the compiler cannot enforce. |
+| **Architecture** | 28 | Api (so all of them) | Layering, registration, and the conventions the compiler cannot enforce. |
 | **Integration** | 51 | Api | Real HTTP through `WebApplicationFactory` against a real SQL Server. |
 | **Frontend** | 48 | — | Authentication lifecycle, error mapping, tenant state, reusable UI components and feature screens. |
 
@@ -640,7 +640,7 @@ else, so a rule that ever needs EF Core to exercise stops the project compiling 
 than an architecture test, and an earlier one.
 
 **The application tests exist because of the repositories and the use-case split.** Before, the
-logic lived in a service that took `IWorkBoardDbContext` and composed its own queries, so exercising
+logic lived in a service that composed its own database queries, so exercising
 "a column from another project is rejected" meant standing up a provider and seeding four tables —
 and nobody did. With substituted repositories it is three lines of arrangement.
 

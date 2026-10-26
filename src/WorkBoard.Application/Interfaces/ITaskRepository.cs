@@ -15,10 +15,9 @@ namespace WorkBoard.Application.Interfaces;
 /// accident. See ADR-013.
 /// </para>
 /// <para>
-/// Reads are deliberately absent. Listing, searching and projecting stay on
-/// <see cref="IWorkBoardDbContext"/> inside the query services, where LINQ composes into a single
-/// SQL statement. Routing them through methods here would return entities that then need mapping in
-/// memory, which is the exact cost the projections were written to avoid.
+/// Reads are deliberately absent. Listing, searching and projecting use the feature query
+/// interfaces; their Infrastructure implementations compose LINQ into SQL and return DTOs. Routing
+/// reads through this write repository would return entities that then need mapping in memory.
 /// </para>
 /// </remarks>
 public interface ITaskRepository

@@ -1,8 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using WorkBoard.Application.DTOs.Projects;
-using WorkBoard.Application.Extensions;
 using WorkBoard.Application.Interfaces;
-using WorkBoard.Application.Mappings.Projects;
 
 namespace WorkBoard.Application.UseCases.Projects.ListProjects;
 
@@ -13,16 +10,11 @@ namespace WorkBoard.Application.UseCases.Projects.ListProjects;
 /// leak another tenant's projects by forgetting a <c>Where</c>. Forgetting is the failure mode a
 /// filter defends against; remembering is not something to rely on.
 /// </remarks>
-public sealed class ListProjectsUseCase(IWorkBoardDbContext db) : IListProjectsUseCase
+public sealed class ListProjectsUseCase(IProjectQueries queries) : IListProjectsUseCase
 {
     /// <inheritdoc/>
     public async Task<IReadOnlyList<ProjectSummaryDto>> ExecuteAsync(
         bool includeArchived,
         CancellationToken cancellationToken) =>
-        await db.Projects
-            .AsNoTracking()
-            .WhereIf(!includeArchived, project => !project.IsArchived)
-            .OrderBy(project => project.Name)
-            .Select(ProjectMappings.ToSummary())
-            .ToListAsync(cancellationToken);
+        await queries.ListAsync(includeArchived, cancellationToken);
 }

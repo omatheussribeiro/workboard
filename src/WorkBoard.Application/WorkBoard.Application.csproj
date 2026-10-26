@@ -5,12 +5,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!--
-      EF Core (abstractions + relational) is referenced on purpose: the application layer owns
-      the read models and queries them through IWorkBoardDbContext with LINQ. See ADR-001.
-    -->
-    <PackageReference Include="Microsoft.EntityFrameworkCore" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
     <PackageReference Include="FluentValidation" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
